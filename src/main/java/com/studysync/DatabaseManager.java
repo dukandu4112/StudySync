@@ -8,6 +8,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 /**
  * Manages StudySync's SQLite database connection and schema.
  */
@@ -229,5 +230,248 @@ public boolean deleteCourse(int id) {
                 "Unable to delete course.",
                 exception);
     }
+}
+    public Assignment addAssignment(
+        int courseId,
+        String title,
+        String description,
+        LocalDateTime dueDate,
+        Assignment.Priority priority) {
+
+    Assignment assignment = new Assignment(
+            courseId,
+            title,
+            description,
+            dueDate,
+            priority);
+
+    String sql = """
+            INSERT INTO assignments
+                (course_id, title, description, due_date, priority, completed)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """;
+
+    try (Connection connection = getConnection();
+         PreparedStatement statement =
+                 connection.prepareStatement(
+                         sql,
+                         Statement.RETURN_GENERATED_KEYS)) {
+
+        statement.setInt(1, assignment.getCourseId());
+        statement.setString(2, assignment.getTitle());
+        statement.setString(3, assignment.getDescription());
+        statement.setString(4, assignment.getDueDate().toString());
+        statement.setString(5, assignment.getPriority().name());
+        statement.setInt(6, assignment.isCompleted() ? 1 : 0);
+
+        statement.executeUpdate();
+
+        try (ResultSet keys = statement.getGeneratedKeys()) {
+            if (keys.next()) {
+                return new Assignment(
+                        keys.getInt(1),
+                        assignment.getCourseId(),
+                        assignment.getTitle(),
+                        assignment.getDescription(),
+                        assignment.getDueDate(),
+                        assignment.getPriority(),
+                        assignment.isCompleted());
+            }
+        }
+
+        throw new IllegalStateException(
+                "Assignment was created, but no ID was returned.");
+
+    } catch (SQLException exception) {
+        throw new IllegalStateException(
+                "Unable to add assignment.",
+                exception);
+    }
+}
+
+public List<Assignment> getAllAssignments() {
+    List<Assignment> assignments = new ArrayList<>();
+
+    String sql = """
+            SELECT id, course_id, title, description,
+                   due_date, priority, completed
+            FROM assignments
+            ORDER BY due_date
+            """;
+
+    try (Connection connection = getConnection();
+         PreparedStatement statement = connection.prepareStatement(sql);
+         ResultSet results = statement.executeQuery()) {
+
+        while (results.next()) {
+            assignments.add(mapAssignment(results));
+        }
+
+        return assignments;
+
+    } catch (SQLException exception) {
+        throw new IllegalStateException(
+                "Unable to retrieve assignments.",
+                exception);
+    }
+}
+
+public List<Assignment> getAssignmentsByCourse(int courseId) {
+    List<Assignment> assignments = new ArrayList<>();
+
+    String sql = """
+            SELECT id, course_id, title, description,
+                   due_date, priority, completed
+            FROM assignments
+            WHERE course_id = ?
+            ORDER BY due_date
+            """;
+
+    try (Connection connection = getConnection();
+         PreparedStatement statement = connection.prepareStatement(sql)) {
+
+        statement.setInt(1, courseId);
+
+        try (ResultSet results = statement.executeQuery()) {
+            while (results.next()) {
+                assignments.add(mapAssignment(results));
+            }
+        }
+
+        return assignments;
+
+    } catch (SQLException exception) {
+        throw new IllegalStateException(
+                "Unable to retrieve course assignments.",
+                exception);
+    }
+}
+
+public Assignment findAssignmentById(int id) {
+    String sql = """
+            SELECT id, course_id, title, description,
+                   due_date, priority, completed
+            FROM assignments
+            WHERE id = ?
+            """;
+
+    try (Connection connection = getConnection();
+         PreparedStatement statement = connection.prepareStatement(sql)) {
+
+        statement.setInt(1, id);
+
+        try (ResultSet results = statement.executeQuery()) {
+            if (results.next()) {
+                return mapAssignment(results);
+            }
+        }
+
+        return null;
+
+    } catch (SQLException exception) {
+        throw new IllegalStateException(
+                "Unable to find assignment.",
+                exception);
+    }
+}
+
+public boolean updateAssignment(
+        int id,
+        int courseId,
+        String title,
+        String description,
+        LocalDateTime dueDate,
+        Assignment.Priority priority) {
+
+    Assignment assignment = new Assignment(
+            courseId,
+            title,
+            description,
+            dueDate,
+            priority);
+
+    String sql = """
+            UPDATE assignments
+            SET course_id = ?,
+                title = ?,
+                description = ?,
+                due_date = ?,
+                priority = ?
+            WHERE id = ?
+            """;
+
+    try (Connection connection = getConnection();
+         PreparedStatement statement = connection.prepareStatement(sql)) {
+
+        statement.setInt(1, assignment.getCourseId());
+        statement.setString(2, assignment.getTitle());
+        statement.setString(3, assignment.getDescription());
+        statement.setString(4, assignment.getDueDate().toString());
+        statement.setString(5, assignment.getPriority().name());
+        statement.setInt(6, id);
+
+        return statement.executeUpdate() > 0;
+
+    } catch (SQLException exception) {
+        throw new IllegalStateException(
+                "Unable to update assignment.",
+                exception);
+    }
+}
+
+public boolean setAssignmentCompleted(int id, boolean completed) {
+    String sql = """
+            UPDATE assignments
+            SET completed = ?
+            WHERE id = ?
+            """;
+
+    try (Connection connection = getConnection();
+         PreparedStatement statement = connection.prepareStatement(sql)) {
+
+        statement.setInt(1, completed ? 1 : 0);
+        statement.setInt(2, id);
+
+        return statement.executeUpdate() > 0;
+
+    } catch (SQLException exception) {
+        throw new IllegalStateException(
+                "Unable to update assignment completion status.",
+                exception);
+    }
+}
+
+public boolean deleteAssignment(int id) {
+    String sql = """
+            DELETE FROM assignments
+            WHERE id = ?
+            """;
+
+    try (Connection connection = getConnection();
+         PreparedStatement statement = connection.prepareStatement(sql)) {
+
+        statement.setInt(1, id);
+
+        return statement.executeUpdate() > 0;
+
+    } catch (SQLException exception) {
+        throw new IllegalStateException(
+                "Unable to delete assignment.",
+                exception);
+    }
+}
+
+private Assignment mapAssignment(ResultSet results)
+        throws SQLException {
+
+    return new Assignment(
+            results.getInt("id"),
+            results.getInt("course_id"),
+            results.getString("title"),
+            results.getString("description"),
+            LocalDateTime.parse(results.getString("due_date")),
+            Assignment.Priority.valueOf(
+                    results.getString("priority")),
+            results.getInt("completed") == 1);
 }
 }
