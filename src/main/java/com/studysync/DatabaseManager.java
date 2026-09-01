@@ -474,4 +474,221 @@ private Assignment mapAssignment(ResultSet results)
                     results.getString("priority")),
             results.getInt("completed") == 1);
 }
+    public StudySession addStudySession(
+        int courseId,
+        LocalDateTime startTime,
+        int durationMinutes,
+        String notes) {
+
+    StudySession session = new StudySession(
+            courseId,
+            startTime,
+            durationMinutes,
+            notes);
+
+    String sql = """
+            INSERT INTO study_sessions
+                (course_id, start_time, duration_minutes, notes)
+            VALUES (?, ?, ?, ?)
+            """;
+
+    try (Connection connection = getConnection();
+         PreparedStatement statement =
+                 connection.prepareStatement(
+                         sql,
+                         Statement.RETURN_GENERATED_KEYS)) {
+
+        statement.setInt(1, session.getCourseId());
+        statement.setString(2, session.getStartTime().toString());
+        statement.setInt(3, session.getDurationMinutes());
+        statement.setString(4, session.getNotes());
+
+        statement.executeUpdate();
+
+        try (ResultSet keys = statement.getGeneratedKeys()) {
+            if (keys.next()) {
+                return new StudySession(
+                        keys.getInt(1),
+                        session.getCourseId(),
+                        session.getStartTime(),
+                        session.getDurationMinutes(),
+                        session.getNotes());
+            }
+        }
+
+        throw new IllegalStateException(
+                "Study session was created, but no ID was returned.");
+
+    } catch (SQLException exception) {
+        throw new IllegalStateException(
+                "Unable to add study session.",
+                exception);
+    }
+}
+
+public List<StudySession> getAllStudySessions() {
+    List<StudySession> sessions = new ArrayList<>();
+
+    String sql = """
+            SELECT id, course_id, start_time,
+                   duration_minutes, notes
+            FROM study_sessions
+            ORDER BY start_time DESC
+            """;
+
+    try (Connection connection = getConnection();
+         PreparedStatement statement =
+                 connection.prepareStatement(sql);
+         ResultSet results = statement.executeQuery()) {
+
+        while (results.next()) {
+            sessions.add(mapStudySession(results));
+        }
+
+        return sessions;
+
+    } catch (SQLException exception) {
+        throw new IllegalStateException(
+                "Unable to retrieve study sessions.",
+                exception);
+    }
+}
+
+public List<StudySession> getStudySessionsByCourse(
+        int courseId) {
+
+    List<StudySession> sessions = new ArrayList<>();
+
+    String sql = """
+            SELECT id, course_id, start_time,
+                   duration_minutes, notes
+            FROM study_sessions
+            WHERE course_id = ?
+            ORDER BY start_time DESC
+            """;
+
+    try (Connection connection = getConnection();
+         PreparedStatement statement =
+                 connection.prepareStatement(sql)) {
+
+        statement.setInt(1, courseId);
+
+        try (ResultSet results = statement.executeQuery()) {
+            while (results.next()) {
+                sessions.add(mapStudySession(results));
+            }
+        }
+
+        return sessions;
+
+    } catch (SQLException exception) {
+        throw new IllegalStateException(
+                "Unable to retrieve course study sessions.",
+                exception);
+    }
+}
+
+public StudySession findStudySessionById(int id) {
+    String sql = """
+            SELECT id, course_id, start_time,
+                   duration_minutes, notes
+            FROM study_sessions
+            WHERE id = ?
+            """;
+
+    try (Connection connection = getConnection();
+         PreparedStatement statement =
+                 connection.prepareStatement(sql)) {
+
+        statement.setInt(1, id);
+
+        try (ResultSet results = statement.executeQuery()) {
+            if (results.next()) {
+                return mapStudySession(results);
+            }
+        }
+
+        return null;
+
+    } catch (SQLException exception) {
+        throw new IllegalStateException(
+                "Unable to find study session.",
+                exception);
+    }
+}
+
+public boolean updateStudySession(
+        int id,
+        int courseId,
+        LocalDateTime startTime,
+        int durationMinutes,
+        String notes) {
+
+    StudySession session = new StudySession(
+            courseId,
+            startTime,
+            durationMinutes,
+            notes);
+
+    String sql = """
+            UPDATE study_sessions
+            SET course_id = ?,
+                start_time = ?,
+                duration_minutes = ?,
+                notes = ?
+            WHERE id = ?
+            """;
+
+    try (Connection connection = getConnection();
+         PreparedStatement statement =
+                 connection.prepareStatement(sql)) {
+
+        statement.setInt(1, session.getCourseId());
+        statement.setString(2, session.getStartTime().toString());
+        statement.setInt(3, session.getDurationMinutes());
+        statement.setString(4, session.getNotes());
+        statement.setInt(5, id);
+
+        return statement.executeUpdate() > 0;
+
+    } catch (SQLException exception) {
+        throw new IllegalStateException(
+                "Unable to update study session.",
+                exception);
+    }
+}
+
+public boolean deleteStudySession(int id) {
+    String sql = """
+            DELETE FROM study_sessions
+            WHERE id = ?
+            """;
+
+    try (Connection connection = getConnection();
+         PreparedStatement statement =
+                 connection.prepareStatement(sql)) {
+
+        statement.setInt(1, id);
+
+        return statement.executeUpdate() > 0;
+
+    } catch (SQLException exception) {
+        throw new IllegalStateException(
+                "Unable to delete study session.",
+                exception);
+    }
+}
+
+private StudySession mapStudySession(ResultSet results)
+        throws SQLException {
+
+    return new StudySession(
+            results.getInt("id"),
+            results.getInt("course_id"),
+            LocalDateTime.parse(
+                    results.getString("start_time")),
+            results.getInt("duration_minutes"),
+            results.getString("notes")); 
+        }
+    
 }
