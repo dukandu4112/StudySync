@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.Scanner;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -98,6 +99,127 @@ class StudySyncCliTest {
     }
 
     @Test
+    void searchAssignmentsOptionDisplaysMatchingAssignment() {
+        Course course = createCourseWithAssignments();
+        service.createAssignment(
+                course.getId(),
+                "Binary Search Review",
+                "Practice search algorithms",
+                LocalDateTime.now().plusDays(3),
+                Assignment.Priority.HIGH);
+
+        runCli("9\nbinary\n0\n");
+
+        String text = output.toString();
+        assertTrue(text.contains("--- Search Results ---"));
+        assertTrue(text.contains("Binary Search Review"));
+        assertFalse(text.contains("No assignments found."));
+    }
+
+    @Test
+    void priorityFilterOptionOnlyDisplaysSelectedPriority() {
+        Course course = service.createCourse(
+                "Data Structures",
+                "CSCI 3300");
+
+        service.createAssignment(
+                course.getId(),
+                "Critical Project",
+                "",
+                LocalDateTime.now().plusDays(1),
+                Assignment.Priority.HIGH);
+        service.createAssignment(
+                course.getId(),
+                "Optional Reading",
+                "",
+                LocalDateTime.now().plusDays(2),
+                Assignment.Priority.LOW);
+
+        runCli("10\nHIGH\n0\n");
+
+        String text = output.toString();
+        assertTrue(text.contains("--- HIGH Priority Assignments ---"));
+        assertTrue(text.contains("Critical Project"));
+        assertFalse(text.contains("Optional Reading"));
+    }
+
+    @Test
+    void pendingAssignmentsOptionExcludesCompletedWork() {
+        Course course = createCourseWithAssignments();
+        Assignment completed = service.createAssignment(
+                course.getId(),
+                "Finished Homework",
+                "",
+                LocalDateTime.now().plusDays(2),
+                Assignment.Priority.MEDIUM);
+        service.completeAssignment(completed.getId());
+
+        runCli("11\n0\n");
+
+        String text = output.toString();
+        assertTrue(text.contains("--- Pending Assignments ---"));
+        assertTrue(text.contains("Pending Homework"));
+        assertFalse(text.contains("Finished Homework"));
+    }
+
+    @Test
+    void completedAssignmentsOptionOnlyDisplaysCompletedWork() {
+        Course course = createCourseWithAssignments();
+        Assignment completed = service.createAssignment(
+                course.getId(),
+                "Finished Homework",
+                "",
+                LocalDateTime.now().plusDays(2),
+                Assignment.Priority.MEDIUM);
+        service.completeAssignment(completed.getId());
+
+        runCli("12\n0\n");
+
+        String text = output.toString();
+        assertTrue(text.contains("--- Completed Assignments ---"));
+        assertTrue(text.contains("Finished Homework"));
+        assertFalse(text.contains("Pending Homework"));
+    }
+
+    @Test
+    void overdueAssignmentsOptionOnlyDisplaysOverdueWork() {
+        Course course = service.createCourse(
+                "Linear Algebra",
+                "MATH 2502");
+
+        service.createAssignment(
+                course.getId(),
+                "Late Matrix Homework",
+                "",
+                LocalDateTime.now().minusDays(1),
+                Assignment.Priority.HIGH);
+        service.createAssignment(
+                course.getId(),
+                "Future Matrix Homework",
+                "",
+                LocalDateTime.now().plusDays(2),
+                Assignment.Priority.MEDIUM);
+
+        runCli("13\n0\n");
+
+        String text = output.toString();
+        assertTrue(text.contains("--- Overdue Assignments ---"));
+        assertTrue(text.contains("Late Matrix Homework"));
+        assertFalse(text.contains("Future Matrix Homework"));
+    }
+
+    @Test
+    void searchWithNoMatchesShowsEmptyMessage() {
+        createCourseWithAssignments();
+
+        runCli("9\nnonexistent\n0\n");
+
+        String text = output.toString();
+        assertTrue(text.contains("--- Search Results ---"));
+        assertTrue(text.contains("No assignments found."));
+    }
+
+    @Test
     void positiveNumberInputRetriesAfterInvalidValues() {
         Course course = service.createCourse(
                 "Data Structures",
@@ -176,6 +298,21 @@ class StudySyncCliTest {
         String text = output.toString();
         assertTrue(text.contains("Error: Course does not exist: 999"));
         assertTrue(text.contains("StudySync closed"));
+    }
+
+    private Course createCourseWithAssignments() {
+        Course course = service.createCourse(
+                "Data Structures",
+                "CSCI 3300");
+
+        service.createAssignment(
+                course.getId(),
+                "Pending Homework",
+                "Practice trees",
+                LocalDateTime.now().plusDays(1),
+                Assignment.Priority.HIGH);
+
+        return course;
     }
 
     private void runCli(String input) {
