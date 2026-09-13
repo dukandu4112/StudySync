@@ -20,14 +20,12 @@ public class StudySyncCli {
         if (scanner == null) {
             throw new IllegalArgumentException("Scanner cannot be null.");
         }
-
         this.service = service;
         this.scanner = scanner;
     }
 
     public void run() {
         boolean running = true;
-
         printHeader();
 
         while (running) {
@@ -49,13 +47,14 @@ public class StudySyncCli {
                     case "11" -> listPendingAssignments();
                     case "12" -> listCompletedAssignments();
                     case "13" -> listOverdueAssignments();
+                    case "14" -> editAssignment();
+                    case "15" -> deleteAssignment();
                     case "0" -> running = false;
                     default -> System.out.println("Invalid option. Please try again.");
                 }
             } catch (IllegalArgumentException | IllegalStateException exception) {
                 System.out.println("Error: " + exception.getMessage());
             }
-
             System.out.println();
         }
 
@@ -85,13 +84,14 @@ public class StudySyncCli {
         System.out.println("11. View pending assignments");
         System.out.println("12. View completed assignments");
         System.out.println("13. View overdue assignments");
+        System.out.println("14. Edit assignment");
+        System.out.println("15. Delete assignment");
         System.out.println("0. Exit");
         System.out.print("Choose an option: ");
     }
 
     private void showDashboard() {
         DashboardSummary summary = service.getDashboardSummary();
-
         System.out.println("\n--- Dashboard ---");
         System.out.println("Courses: " + summary.totalCourses());
         System.out.println("Assignments: " + summary.totalAssignments());
@@ -107,7 +107,6 @@ public class StudySyncCli {
         String name = scanner.nextLine();
         System.out.print("Course code: ");
         String code = scanner.nextLine();
-
         Course course = service.createCourse(name, code);
         System.out.println("Added course: " + course);
     }
@@ -115,12 +114,10 @@ public class StudySyncCli {
     private void listCourses() {
         List<Course> courses = service.getCourses();
         System.out.println("\n--- Courses ---");
-
         if (courses.isEmpty()) {
             System.out.println("No courses found.");
             return;
         }
-
         courses.forEach(course ->
                 System.out.println(course.getId() + ". " + course));
     }
@@ -136,13 +133,38 @@ public class StudySyncCli {
         Assignment.Priority priority = readPriority();
 
         Assignment assignment = service.createAssignment(
-                courseId,
-                title,
-                description,
-                dueDate,
-                priority);
-
+                courseId, title, description, dueDate, priority);
         System.out.println("Added assignment: " + assignment);
+    }
+
+    private void editAssignment() {
+        int assignmentId = readPositiveInt("Assignment ID to edit: ");
+        int courseId = readPositiveInt("New course ID: ");
+        System.out.print("New assignment title: ");
+        String title = scanner.nextLine();
+        System.out.print("New description: ");
+        String description = scanner.nextLine();
+        LocalDateTime dueDate = readDateTime(
+                "New due date/time (YYYY-MM-DDTHH:MM): ");
+        Assignment.Priority priority = readPriority();
+
+        service.updateAssignment(
+                assignmentId, courseId, title, description, dueDate, priority);
+        System.out.println("Assignment updated successfully.");
+    }
+
+    private void deleteAssignment() {
+        int assignmentId = readPositiveInt("Assignment ID to delete: ");
+        System.out.print("Delete this assignment? (YES/NO): ");
+        String confirmation = scanner.nextLine().trim();
+
+        if (!confirmation.equalsIgnoreCase("YES")) {
+            System.out.println("Assignment deletion cancelled.");
+            return;
+        }
+
+        service.deleteAssignment(assignmentId);
+        System.out.println("Assignment deleted successfully.");
     }
 
     private void listAssignments() {
@@ -152,9 +174,7 @@ public class StudySyncCli {
     private void searchAssignments() {
         System.out.print("Search assignments: ");
         String query = scanner.nextLine();
-        printAssignments(
-                "Search Results",
-                service.searchAssignments(query));
+        printAssignments("Search Results", service.searchAssignments(query));
     }
 
     private void filterAssignmentsByPriority() {
@@ -165,34 +185,23 @@ public class StudySyncCli {
     }
 
     private void listPendingAssignments() {
-        printAssignments(
-                "Pending Assignments",
-                service.getPendingAssignments());
+        printAssignments("Pending Assignments", service.getPendingAssignments());
     }
 
     private void listCompletedAssignments() {
-        printAssignments(
-                "Completed Assignments",
-                service.getCompletedAssignments());
+        printAssignments("Completed Assignments", service.getCompletedAssignments());
     }
 
     private void listOverdueAssignments() {
-        printAssignments(
-                "Overdue Assignments",
-                service.getOverdueAssignments());
+        printAssignments("Overdue Assignments", service.getOverdueAssignments());
     }
 
-    private void printAssignments(
-            String heading,
-            List<Assignment> assignments) {
-
+    private void printAssignments(String heading, List<Assignment> assignments) {
         System.out.println("\n--- " + heading + " ---");
-
         if (assignments.isEmpty()) {
             System.out.println("No assignments found.");
             return;
         }
-
         assignments.forEach(assignment ->
                 System.out.println(assignment.getId() + ". " + assignment));
     }
@@ -212,23 +221,17 @@ public class StudySyncCli {
         String notes = scanner.nextLine();
 
         StudySession session = service.recordStudySession(
-                courseId,
-                startTime,
-                durationMinutes,
-                notes);
-
+                courseId, startTime, durationMinutes, notes);
         System.out.println("Recorded: " + session);
     }
 
     private void listStudySessions() {
         List<StudySession> sessions = service.getStudySessions();
         System.out.println("\n--- Study Sessions ---");
-
         if (sessions.isEmpty()) {
             System.out.println("No study sessions found.");
             return;
         }
-
         sessions.forEach(session ->
                 System.out.println(session.getId() + ". " + session));
     }
@@ -237,7 +240,6 @@ public class StudySyncCli {
         while (true) {
             System.out.print(prompt);
             String input = scanner.nextLine().trim();
-
             try {
                 int value = Integer.parseInt(input);
                 if (value > 0) {
@@ -246,7 +248,6 @@ public class StudySyncCli {
             } catch (NumberFormatException ignored) {
                 // Display the common validation message below.
             }
-
             System.out.println("Please enter a positive whole number.");
         }
     }
@@ -255,12 +256,10 @@ public class StudySyncCli {
         while (true) {
             System.out.print(prompt);
             String input = scanner.nextLine().trim();
-
             try {
                 return LocalDateTime.parse(input);
             } catch (DateTimeParseException exception) {
-                System.out.println(
-                        "Invalid date/time. Example: 2026-09-23T14:30");
+                System.out.println("Invalid date/time. Example: 2026-09-23T14:30");
             }
         }
     }
@@ -269,7 +268,6 @@ public class StudySyncCli {
         while (true) {
             System.out.print("Priority (LOW, MEDIUM, HIGH): ");
             String input = scanner.nextLine().trim().toUpperCase();
-
             try {
                 return Assignment.Priority.valueOf(input);
             } catch (IllegalArgumentException exception) {
