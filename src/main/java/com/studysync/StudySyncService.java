@@ -139,6 +139,32 @@ public class StudySyncService {
         return completed * 100.0 / assignments.size();
     }
 
+    public DashboardSummary getDashboardSummary() {
+        List<Course> courses = databaseManager.getAllCourses();
+        List<Assignment> assignments =
+                databaseManager.getAllAssignments();
+
+        int completedAssignments = (int) assignments.stream()
+                .filter(Assignment::isCompleted)
+                .count();
+
+        int pendingAssignments =
+                assignments.size() - completedAssignments;
+
+        int overdueAssignments = (int) assignments.stream()
+                .filter(Assignment::isOverdue)
+                .count();
+
+        return new DashboardSummary(
+                courses.size(),
+                assignments.size(),
+                pendingAssignments,
+                completedAssignments,
+                overdueAssignments,
+                getTotalStudyMinutes(),
+                getAssignmentCompletionPercentage());
+    }
+
     private Course requireCourse(int courseId) {
         Course course = databaseManager.findCourseById(courseId);
 
