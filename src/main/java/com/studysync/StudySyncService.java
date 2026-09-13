@@ -117,6 +117,38 @@ public class StudySyncService {
                 .toList();
     }
 
+    public boolean updateAssignment(
+            int assignmentId,
+            int courseId,
+            String title,
+            String description,
+            LocalDateTime dueDate,
+            Assignment.Priority priority) {
+
+        requireAssignment(assignmentId);
+        requireCourse(courseId);
+
+        Assignment validatedAssignment = new Assignment(
+                courseId,
+                title,
+                description,
+                dueDate,
+                priority);
+
+        return databaseManager.updateAssignment(
+                assignmentId,
+                validatedAssignment.getCourseId(),
+                validatedAssignment.getTitle(),
+                validatedAssignment.getDescription(),
+                validatedAssignment.getDueDate(),
+                validatedAssignment.getPriority());
+    }
+
+    public boolean deleteAssignment(int assignmentId) {
+        requireAssignment(assignmentId);
+        return databaseManager.deleteAssignment(assignmentId);
+    }
+
     public boolean completeAssignment(int assignmentId) {
         requireAssignment(assignmentId);
         return databaseManager.setAssignmentCompleted(
