@@ -1,17 +1,19 @@
 package com.studysync;
 
+import java.util.Scanner;
+
 /**
  * Entry point for the StudySync application.
  */
 public class Main {
 
     public static void main(String[] args) {
+        DatabaseManager databaseManager = new DatabaseManager();
+        StudySyncService service = new StudySyncService(databaseManager);
 
-        System.out.println("================================");
-        System.out.println("          StudySync");
-        System.out.println("================================");
-        System.out.println("Student Productivity Manager");
-        System.out.println();
-        System.out.println("StudySync started successfully.");
+        try (Scanner scanner = new Scanner(System.in)) {
+            StudySyncCli cli = new StudySyncCli(service, scanner);
+            cli.run();
+        }
     }
 }
