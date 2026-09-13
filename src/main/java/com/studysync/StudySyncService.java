@@ -3,6 +3,7 @@ package com.studysync;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Application service that coordinates StudySync's core productivity features.
@@ -62,10 +63,56 @@ public class StudySyncService {
                 .toList();
     }
 
+    public List<Assignment> getCompletedAssignments() {
+        return databaseManager.getAllAssignments()
+                .stream()
+                .filter(Assignment::isCompleted)
+                .sorted(Comparator.comparing(Assignment::getDueDate))
+                .toList();
+    }
+
     public List<Assignment> getOverdueAssignments() {
         return databaseManager.getAllAssignments()
                 .stream()
                 .filter(Assignment::isOverdue)
+                .sorted(Comparator.comparing(Assignment::getDueDate))
+                .toList();
+    }
+
+    public List<Assignment> getAssignmentsByPriority(
+            Assignment.Priority priority) {
+
+        if (priority == null) {
+            throw new IllegalArgumentException(
+                    "Assignment priority cannot be null.");
+        }
+
+        return databaseManager.getAllAssignments()
+                .stream()
+                .filter(assignment ->
+                        assignment.getPriority() == priority)
+                .sorted(Comparator.comparing(Assignment::getDueDate))
+                .toList();
+    }
+
+    public List<Assignment> searchAssignments(String query) {
+        if (query == null || query.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Search query cannot be empty.");
+        }
+
+        String normalizedQuery =
+                query.trim().toLowerCase(Locale.ROOT);
+
+        return databaseManager.getAllAssignments()
+                .stream()
+                .filter(assignment ->
+                        assignment.getTitle()
+                                .toLowerCase(Locale.ROOT)
+                                .contains(normalizedQuery)
+                                || assignment.getDescription()
+                                .toLowerCase(Locale.ROOT)
+                                .contains(normalizedQuery))
                 .sorted(Comparator.comparing(Assignment::getDueDate))
                 .toList();
     }
