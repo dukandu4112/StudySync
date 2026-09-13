@@ -89,9 +89,37 @@ class StudySyncServiceTest {
                 service.getPendingAssignments();
 
         assertEquals(1, pending.size());
-        assertEquals(
-                "Pending Work",
-                pending.get(0).getTitle());
+        assertEquals("Pending Work", pending.get(0).getTitle());
+    }
+
+    @Test
+    void completedAssignmentsExcludePendingAssignments() {
+        Course course = service.createCourse(
+                "Algorithms",
+                "CSCI 3320");
+
+        Assignment completed = service.createAssignment(
+                course.getId(),
+                "Finished Project",
+                "Implementation complete",
+                LocalDateTime.now().plusDays(2),
+                Assignment.Priority.HIGH);
+
+        service.createAssignment(
+                course.getId(),
+                "Pending Project",
+                "Still working",
+                LocalDateTime.now().plusDays(1),
+                Assignment.Priority.MEDIUM);
+
+        service.completeAssignment(completed.getId());
+
+        List<Assignment> assignments =
+                service.getCompletedAssignments();
+
+        assertEquals(1, assignments.size());
+        assertEquals("Finished Project", assignments.get(0).getTitle());
+        assertTrue(assignments.get(0).isCompleted());
     }
 
     @Test
@@ -118,9 +146,111 @@ class StudySyncServiceTest {
                 service.getOverdueAssignments();
 
         assertEquals(1, overdue.size());
-        assertEquals(
-                "Overdue Homework",
-                overdue.get(0).getTitle());
+        assertEquals("Overdue Homework", overdue.get(0).getTitle());
+    }
+
+    @Test
+    void assignmentsCanBeFilteredByPriority() {
+        Course course = service.createCourse(
+                "Data Structures",
+                "CSCI 3300");
+
+        service.createAssignment(
+                course.getId(),
+                "Low Priority",
+                "",
+                LocalDateTime.now().plusDays(3),
+                Assignment.Priority.LOW);
+
+        service.createAssignment(
+                course.getId(),
+                "High Priority Later",
+                "",
+                LocalDateTime.now().plusDays(2),
+                Assignment.Priority.HIGH);
+
+        service.createAssignment(
+                course.getId(),
+                "High Priority First",
+                "",
+                LocalDateTime.now().plusDays(1),
+                Assignment.Priority.HIGH);
+
+        List<Assignment> highPriority =
+                service.getAssignmentsByPriority(
+                        Assignment.Priority.HIGH);
+
+        assertEquals(2, highPriority.size());
+        assertEquals("High Priority First", highPriority.get(0).getTitle());
+        assertEquals("High Priority Later", highPriority.get(1).getTitle());
+    }
+
+    @Test
+    void nullPriorityFilterIsRejected() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.getAssignmentsByPriority(null));
+    }
+
+    @Test
+    void assignmentSearchMatchesTitleCaseInsensitively() {
+        Course course = service.createCourse(
+                "Computer Architecture",
+                "CSCI 3212");
+
+        service.createAssignment(
+                course.getId(),
+                "Pipeline Review",
+                "Study processor stages",
+                LocalDateTime.now().plusDays(1),
+                Assignment.Priority.HIGH);
+
+        service.createAssignment(
+                course.getId(),
+                "Memory Homework",
+                "Cache hierarchy",
+                LocalDateTime.now().plusDays(2),
+                Assignment.Priority.MEDIUM);
+
+        List<Assignment> results =
+                service.searchAssignments("PIPELINE");
+
+        assertEquals(1, results.size());
+        assertEquals("Pipeline Review", results.get(0).getTitle());
+    }
+
+    @Test
+    void assignmentSearchMatchesDescriptionCaseInsensitively() {
+        Course course = service.createCourse(
+                "Linear Algebra",
+                "MATH 2502");
+
+        service.createAssignment(
+                course.getId(),
+                "Homework 1",
+                "Practice MATRIX operations",
+                LocalDateTime.now().plusDays(1),
+                Assignment.Priority.MEDIUM);
+
+        service.createAssignment(
+                course.getId(),
+                "Homework 2",
+                "Vector practice",
+                LocalDateTime.now().plusDays(2),
+                Assignment.Priority.LOW);
+
+        List<Assignment> results =
+                service.searchAssignments("matrix");
+
+        assertEquals(1, results.size());
+        assertEquals("Homework 1", results.get(0).getTitle());
+    }
+
+    @Test
+    void blankAssignmentSearchIsRejected() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.searchAssignments("   "));
     }
 
     @Test
@@ -136,21 +266,11 @@ class StudySyncServiceTest {
                 LocalDateTime.now().plusDays(1),
                 Assignment.Priority.MEDIUM);
 
-        assertTrue(
-                service.completeAssignment(
-                        assignment.getId()));
-        assertTrue(
-                service.getAssignments()
-                        .get(0)
-                        .isCompleted());
+        assertTrue(service.completeAssignment(assignment.getId()));
+        assertTrue(service.getAssignments().get(0).isCompleted());
 
-        assertTrue(
-                service.reopenAssignment(
-                        assignment.getId()));
-        assertFalse(
-                service.getAssignments()
-                        .get(0)
-                        .isCompleted());
+        assertTrue(service.reopenAssignment(assignment.getId()));
+        assertFalse(service.getAssignments().get(0).isCompleted());
     }
 
     @Test
@@ -185,8 +305,7 @@ class StudySyncServiceTest {
         assertEquals(105, service.getTotalStudyMinutes());
         assertEquals(
                 105,
-                service.getTotalStudyMinutesForCourse(
-                        course.getId()));
+                service.getTotalStudyMinutesForCourse(course.getId()));
     }
 
     @Test
@@ -234,8 +353,7 @@ class StudySyncServiceTest {
 
     @Test
     void dashboardSummaryIsEmptyForNewDatabase() {
-        DashboardSummary summary =
-                service.getDashboardSummary();
+        DashboardSummary summary = service.getDashboardSummary();
 
         assertEquals(0, summary.totalCourses());
         assertEquals(0, summary.totalAssignments());
@@ -243,10 +361,7 @@ class StudySyncServiceTest {
         assertEquals(0, summary.completedAssignments());
         assertEquals(0, summary.overdueAssignments());
         assertEquals(0, summary.totalStudyMinutes());
-        assertEquals(
-                0.0,
-                summary.completionPercentage(),
-                0.001);
+        assertEquals(0.0, summary.completionPercentage(), 0.001);
     }
 
     @Test
@@ -287,8 +402,7 @@ class StudySyncServiceTest {
                 30,
                 "Graphs");
 
-        DashboardSummary summary =
-                service.getDashboardSummary();
+        DashboardSummary summary = service.getDashboardSummary();
 
         assertEquals(2, summary.totalCourses());
         assertEquals(2, summary.totalAssignments());
@@ -296,9 +410,6 @@ class StudySyncServiceTest {
         assertEquals(1, summary.completedAssignments());
         assertEquals(1, summary.overdueAssignments());
         assertEquals(90, summary.totalStudyMinutes());
-        assertEquals(
-                50.0,
-                summary.completionPercentage(),
-                0.001);
+        assertEquals(50.0, summary.completionPercentage(), 0.001);
     }
 }
