@@ -44,6 +44,11 @@ public class StudySyncCli {
                     case "6" -> completeAssignment();
                     case "7" -> recordStudySession();
                     case "8" -> listStudySessions();
+                    case "9" -> searchAssignments();
+                    case "10" -> filterAssignmentsByPriority();
+                    case "11" -> listPendingAssignments();
+                    case "12" -> listCompletedAssignments();
+                    case "13" -> listOverdueAssignments();
                     case "0" -> running = false;
                     default -> System.out.println("Invalid option. Please try again.");
                 }
@@ -75,6 +80,11 @@ public class StudySyncCli {
         System.out.println("6. Complete assignment");
         System.out.println("7. Record study session");
         System.out.println("8. View study sessions");
+        System.out.println("9. Search assignments");
+        System.out.println("10. Filter assignments by priority");
+        System.out.println("11. View pending assignments");
+        System.out.println("12. View completed assignments");
+        System.out.println("13. View overdue assignments");
         System.out.println("0. Exit");
         System.out.print("Choose an option: ");
     }
@@ -136,8 +146,47 @@ public class StudySyncCli {
     }
 
     private void listAssignments() {
-        List<Assignment> assignments = service.getAssignments();
-        System.out.println("\n--- Assignments ---");
+        printAssignments("Assignments", service.getAssignments());
+    }
+
+    private void searchAssignments() {
+        System.out.print("Search assignments: ");
+        String query = scanner.nextLine();
+        printAssignments(
+                "Search Results",
+                service.searchAssignments(query));
+    }
+
+    private void filterAssignmentsByPriority() {
+        Assignment.Priority priority = readPriority();
+        printAssignments(
+                priority + " Priority Assignments",
+                service.getAssignmentsByPriority(priority));
+    }
+
+    private void listPendingAssignments() {
+        printAssignments(
+                "Pending Assignments",
+                service.getPendingAssignments());
+    }
+
+    private void listCompletedAssignments() {
+        printAssignments(
+                "Completed Assignments",
+                service.getCompletedAssignments());
+    }
+
+    private void listOverdueAssignments() {
+        printAssignments(
+                "Overdue Assignments",
+                service.getOverdueAssignments());
+    }
+
+    private void printAssignments(
+            String heading,
+            List<Assignment> assignments) {
+
+        System.out.println("\n--- " + heading + " ---");
 
         if (assignments.isEmpty()) {
             System.out.println("No assignments found.");
