@@ -231,4 +231,74 @@ class StudySyncServiceTest {
                 IllegalArgumentException.class,
                 () -> service.completeAssignment(999));
     }
+
+    @Test
+    void dashboardSummaryIsEmptyForNewDatabase() {
+        DashboardSummary summary =
+                service.getDashboardSummary();
+
+        assertEquals(0, summary.totalCourses());
+        assertEquals(0, summary.totalAssignments());
+        assertEquals(0, summary.pendingAssignments());
+        assertEquals(0, summary.completedAssignments());
+        assertEquals(0, summary.overdueAssignments());
+        assertEquals(0, summary.totalStudyMinutes());
+        assertEquals(
+                0.0,
+                summary.completionPercentage(),
+                0.001);
+    }
+
+    @Test
+    void dashboardSummaryReflectsAcademicProgress() {
+        Course firstCourse = service.createCourse(
+                "Data Structures",
+                "CSCI 3300");
+
+        service.createCourse(
+                "Linear Algebra",
+                "MATH 2502");
+
+        Assignment completed = service.createAssignment(
+                firstCourse.getId(),
+                "Completed Homework",
+                "",
+                LocalDateTime.now().plusDays(1),
+                Assignment.Priority.MEDIUM);
+
+        service.createAssignment(
+                firstCourse.getId(),
+                "Overdue Homework",
+                "",
+                LocalDateTime.now().minusDays(1),
+                Assignment.Priority.HIGH);
+
+        service.completeAssignment(completed.getId());
+
+        service.recordStudySession(
+                firstCourse.getId(),
+                LocalDateTime.now(),
+                60,
+                "Trees");
+
+        service.recordStudySession(
+                firstCourse.getId(),
+                LocalDateTime.now().plusHours(2),
+                30,
+                "Graphs");
+
+        DashboardSummary summary =
+                service.getDashboardSummary();
+
+        assertEquals(2, summary.totalCourses());
+        assertEquals(2, summary.totalAssignments());
+        assertEquals(1, summary.pendingAssignments());
+        assertEquals(1, summary.completedAssignments());
+        assertEquals(1, summary.overdueAssignments());
+        assertEquals(90, summary.totalStudyMinutes());
+        assertEquals(
+                50.0,
+                summary.completionPercentage(),
+                0.001);
+    }
 }
