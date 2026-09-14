@@ -1,82 +1,98 @@
 # StudySync
 
-StudySync is a Java 17 student productivity application for organizing courses, assignments, study sessions, deadlines, workload, and academic progress. It uses SQLite for persistent local storage and provides an interactive command-line interface backed by automated JUnit tests and GitHub Actions CI.
+StudySync is a Java 17 student productivity desktop application for organizing courses, assignments, study sessions, deadlines, workload, and academic progress. StudySync 2.0 adds a JavaFX graphical interface while preserving the reusable service, domain, SQLite persistence, automated tests, and original CLI architecture.
 
-**Current release: v1.0.0**
+**Current development version: 2.0.0-SNAPSHOT**
 
 ## Features
 
+- JavaFX desktop interface with Dashboard, Courses, Assignments, Study Sessions, and Workload navigation
 - Create and view academic courses
-- Create, edit, complete, reopen, delete, search, and filter assignments
+- Create, complete, reopen, delete, search, and filter assignments
 - Track due dates, descriptions, priorities, and completion status
-- View pending, completed, overdue, and upcoming assignments
-- Plan workload using configurable upcoming due-date windows
+- Filter assignments by status and priority
+- Plan upcoming workload using 3, 7, 14, or 30-day windows
 - Record and review study sessions
 - Track total study time
-- View an academic progress dashboard with completion metrics
+- View academic progress metrics for courses, assignments, overdue work, completion, and study time
 - Persist application data locally with SQLite
-- Validate user input and recover cleanly from application errors
+- Validate dates, times, durations, and form input with clear UI feedback
+- Preserve the original command-line interface for the StudySync 1.x workflow
 
 ## Technology
 
 - Java 17
+- JavaFX 17
 - Maven
 - SQLite / sqlite-jdbc
 - JUnit 5
 - GitHub Actions
 
-## Project Structure
+## Architecture
+
+StudySync separates the user interface from reusable application logic:
 
 ```text
 src/
 ├── main/java/com/studysync/
-│   ├── Main.java
-│   ├── StudySyncCli.java
-│   ├── StudySyncService.java
-│   ├── DatabaseManager.java
+│   ├── StudySyncApplication.java   # JavaFX desktop UI
+│   ├── UiSupport.java              # testable UI parsing/filtering helpers
+│   ├── Main.java                   # CLI entry point
+│   ├── StudySyncCli.java           # original command-line UI
+│   ├── StudySyncService.java       # application workflows
+│   ├── DatabaseManager.java        # SQLite persistence
 │   ├── Course.java
 │   ├── Assignment.java
 │   ├── StudySession.java
 │   └── DashboardSummary.java
+├── main/resources/com/studysync/
+│   └── studysync.css               # JavaFX styling
 └── test/java/com/studysync/
-    └── automated unit and integration tests
+    └── unit, integration, service, CLI, and UI-support tests
 ```
 
-StudySync separates domain models, application/service logic, SQLite persistence, and the user-facing CLI so the project can evolve toward additional interfaces without duplicating core business logic.
+The JavaFX and CLI interfaces share the same service and persistence layers, keeping business logic out of the presentation layer and avoiding duplicated data-access code.
 
-## Build and Test
+## Build and Verify
 
 Requirements: JDK 17+ and Maven.
 
+Run the complete Maven verification lifecycle:
+
 ```bash
-mvn clean test
+mvn clean verify
 ```
 
-To create the executable application package:
+GitHub Actions runs `mvn --batch-mode verify` for pushes and pull requests targeting `main`.
+
+## Run the JavaFX Desktop Application
+
+During StudySync 2.0 development, launch the desktop interface with the JavaFX Maven plugin:
+
+```bash
+mvn javafx:run
+```
+
+StudySync creates `studysync.db` in the working directory and uses it for persistent local application data.
+
+## Run the Original CLI
+
+The existing CLI remains available while the 2.0 desktop application is finalized. The Maven package configuration continues to support the CLI all-dependencies JAR during the 2.0 snapshot phase.
 
 ```bash
 mvn clean package
+java -jar target/studysync-2.0.0-SNAPSHOT-all.jar
 ```
 
-The packaged all-dependencies JAR is created in `target/` with the `-all.jar` classifier.
+## Testing
 
-## Run
+StudySync uses automated tests across the domain, persistence, service, CLI, and UI-support layers. JavaFX parsing and filtering logic is extracted into pure helper code so it can be verified in CI without requiring a graphical desktop session.
 
-After packaging, run StudySync v1.0.0 with:
+## Version Status
 
-```bash
-java -jar target/studysync-1.0.0-all.jar
-```
+StudySync 1.0.0 established the core productivity platform and CLI. StudySync 2.0.0 is currently being prepared as the desktop release, adding JavaFX navigation, productivity screens, workload planning, stronger validation, and UI-focused test coverage.
 
-StudySync creates `studysync.db` in the working directory and uses it for persistent application data.
-
-## Continuous Integration
-
-GitHub Actions runs the Maven test suite automatically for pushes and pull requests targeting `main`. This helps catch regressions across the domain models, SQLite persistence layer, service layer, and interactive CLI.
-
-## Roadmap
-
-Version 1.0.0 establishes the core StudySync productivity platform. Future development can build on the same service and persistence layers with a graphical interface, richer analytics, notifications, scheduling enhancements, and additional productivity tools.
+No GitHub 2.0 release or tag is implied by the snapshot version until release preparation is complete.
 
 ## License
 
