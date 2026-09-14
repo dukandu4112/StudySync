@@ -2,6 +2,42 @@
 
 All notable changes to StudySync are documented in this file.
 
+## [2.1.0] - In Development
+
+### Added
+
+- Course editing and deletion in the JavaFX desktop interface
+- Service-level course lifecycle validation with cascade-aware deletion behavior
+- Study-session editing and deletion across the service and JavaFX layers
+- Automated study-session lifecycle coverage
+- Dashboard planning analytics for upcoming assignments, high-priority pending work, nearest pending deadline, and most-studied course
+- JavaFX Planning Insights section backed by dashboard analytics
+- Live course search by course code or name
+- Study-session note search and course filtering
+- Reusable `UiSupport` filtering and sorting helpers for courses and study sessions
+- Automated coverage for course and study-session discovery behavior
+
+### Changed
+
+- StudySync development version advanced to `2.1.0-SNAPSHOT` on `develop-2.1`
+- GitHub Actions verifies both the stable `main` branch and the `develop-2.1` development branch
+- Course lists are consistently sorted by course code in UI-support discovery logic
+- Study-session discovery results are ordered newest first
+- `StudySyncService` formatting was cleaned up for maintainability without changing its public workflows
+- `StudySyncApplication` formatting and edit workflow structure were improved for maintainability
+- Desktop documentation now reflects the expanded 2.1 course, study-session, analytics, search, and filtering capabilities
+
+### Fixed
+
+- Course edit dialogs remain open when validation or service updates fail
+- Assignment edit dialogs remain open when validation or service updates fail
+- Study-session edit dialogs remain open when validation or service updates fail
+- Invalid edit input can be corrected immediately without reopening the editor
+
+### Development Status
+
+StudySync 2.1.0 is being finalized on `develop-2.1`. The Maven version remains `2.1.0-SNAPSHOT` until final release-readiness verification is complete. This changelog entry does not claim that a GitHub tag or GitHub Release has been published.
+
 ## [2.0.0] - 2026-09-14
 
 ### Added
