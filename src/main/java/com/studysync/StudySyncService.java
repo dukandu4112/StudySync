@@ -44,6 +44,36 @@ public class StudySyncService {
     public double getAssignmentCompletionPercentage() { List<Assignment> a=databaseManager.getAllAssignments();if(a.isEmpty())return 0.0;long completed=a.stream().filter(Assignment::isCompleted).count();return completed*100.0/a.size(); }
     public DashboardSummary getDashboardSummary() { List<Course> courses=databaseManager.getAllCourses();List<Assignment> a=databaseManager.getAllAssignments();int completed=(int)a.stream().filter(Assignment::isCompleted).count();int pending=a.size()-completed;int overdue=(int)a.stream().filter(Assignment::isOverdue).count();return new DashboardSummary(courses.size(),a.size(),pending,completed,overdue,getTotalStudyMinutes(),getAssignmentCompletionPercentage()); }
 
+    public DashboardAnalytics getDashboardAnalytics() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Assignment> assignments = databaseManager.getAllAssignments();
+        List<Assignment> pending = assignments.stream().filter(a -> !a.isCompleted()).toList();
+        int upcoming = (int) pending.stream()
+                .filter(a -> !a.getDueDate().isBefore(now))
+                .filter(a -> !a.getDueDate().isAfter(now.plusDays(7)))
+                .count();
+        int highPriority = (int) pending.stream()
+                .filter(a -> a.getPriority() == Assignment.Priority.HIGH)
+                .count();
+        Assignment nearest = pending.stream()
+                .filter(a -> !a.getDueDate().isBefore(now))
+                .min(Comparator.comparing(Assignment::getDueDate))
+                .orElse(null);
+
+        Course mostStudied = null;
+        int mostMinutes = 0;
+        for (Course course : databaseManager.getAllCourses()) {
+            int minutes = databaseManager.getStudySessionsByCourse(course.getId()).stream()
+                    .mapToInt(StudySession::getDurationMinutes)
+                    .sum();
+            if (minutes > mostMinutes) {
+                mostMinutes = minutes;
+                mostStudied = course;
+            }
+        }
+        return new DashboardAnalytics(upcoming, highPriority, nearest, mostStudied, mostMinutes);
+    }
+
     private Course requireCourse(int id) { Course c=databaseManager.findCourseById(id);if(c==null)throw new IllegalArgumentException("Course does not exist: "+id);return c; }
     private Assignment requireAssignment(int id) { Assignment a=databaseManager.findAssignmentById(id);if(a==null)throw new IllegalArgumentException("Assignment does not exist: "+id);return a; }
     private StudySession requireStudySession(int id) { StudySession s=databaseManager.findStudySessionById(id);if(s==null)throw new IllegalArgumentException("Study session does not exist: "+id);return s; }
