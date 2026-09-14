@@ -46,7 +46,7 @@ class UiSupportTest {
                 "Matrix practice", now.minusDays(2), Assignment.Priority.LOW);
         Assignment completed = new Assignment(1, "Finished Project",
                 "Java implementation", now.plusDays(3), Assignment.Priority.HIGH);
-        completed.complete();
+        completed.markCompleted();
         List<Assignment> assignments = List.of(highPending, lowOverdue, completed);
 
         assertEquals(List.of(highPending),
