@@ -41,6 +41,7 @@ public class StudySyncCli {
                     case "14" -> editAssignment();
                     case "15" -> deleteAssignment();
                     case "16" -> viewUpcomingWorkload();
+                    case "17" -> reopenAssignment();
                     case "0" -> running = false;
                     default -> System.out.println("Invalid option. Please try again.");
                 }
@@ -77,6 +78,7 @@ public class StudySyncCli {
         System.out.println("14. Edit assignment");
         System.out.println("15. Delete assignment");
         System.out.println("16. View upcoming workload");
+        System.out.println("17. Reopen assignment");
         System.out.println("0. Exit");
         System.out.print("Choose an option: ");
     }
@@ -170,6 +172,11 @@ public class StudySyncCli {
     private void completeAssignment() {
         service.completeAssignment(readPositiveInt("Assignment ID: "));
         System.out.println("Assignment marked completed.");
+    }
+
+    private void reopenAssignment() {
+        service.reopenAssignment(readPositiveInt("Assignment ID: "));
+        System.out.println("Assignment reopened.");
     }
 
     private void recordStudySession() {
