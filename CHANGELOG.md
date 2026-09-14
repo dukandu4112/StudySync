@@ -2,7 +2,7 @@
 
 All notable changes to StudySync are documented in this file.
 
-## [2.1.0] - In Development
+## [2.1.0] - 2026-09-14
 
 ### Added
 
@@ -19,13 +19,13 @@ All notable changes to StudySync are documented in this file.
 
 ### Changed
 
-- StudySync development version advanced to `2.1.0-SNAPSHOT` on `develop-2.1`
+- Maven project version finalized as `2.1.0`
 - GitHub Actions verifies both the stable `main` branch and the `develop-2.1` development branch
 - Course lists are consistently sorted by course code in UI-support discovery logic
 - Study-session discovery results are ordered newest first
 - `StudySyncService` formatting was cleaned up for maintainability without changing its public workflows
 - `StudySyncApplication` formatting and edit workflow structure were improved for maintainability
-- Desktop documentation now reflects the expanded 2.1 course, study-session, analytics, search, and filtering capabilities
+- Desktop documentation reflects the expanded 2.1 course, study-session, analytics, search, and filtering capabilities
 
 ### Fixed
 
@@ -34,9 +34,9 @@ All notable changes to StudySync are documented in this file.
 - Study-session edit dialogs remain open when validation or service updates fail
 - Invalid edit input can be corrected immediately without reopening the editor
 
-### Development Status
+### Release Status
 
-StudySync 2.1.0 is being finalized on `develop-2.1`. The Maven version remains `2.1.0-SNAPSHOT` until final release-readiness verification is complete. This changelog entry does not claim that a GitHub tag or GitHub Release has been published.
+StudySync 2.1.0 is the finalized repository version for the 2.1 milestone on `develop-2.1`, pending final release-readiness CI verification before promotion to the stable branch. This changelog entry does not claim that a GitHub tag or GitHub Release has been published.
 
 ## [2.0.0] - 2026-09-14
 
