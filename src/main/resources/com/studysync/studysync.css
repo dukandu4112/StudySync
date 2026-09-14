@@ -2,91 +2,24 @@
     -fx-font-family: "Segoe UI", Arial, sans-serif;
     -fx-background-color: #f5f7fb;
 }
-
-.app-header {
-    -fx-background-color: white;
-    -fx-border-color: transparent transparent #e5e7eb transparent;
-    -fx-border-width: 0 0 1 0;
-}
-
-.app-title {
-    -fx-font-size: 26px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #111827;
-}
-
-.app-subtitle {
-    -fx-font-size: 13px;
-    -fx-text-fill: #6b7280;
-}
-
-.navigation {
-    -fx-background-color: #111827;
-}
-
-.navigation-button {
-    -fx-background-color: transparent;
-    -fx-text-fill: #d1d5db;
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
-    -fx-alignment: CENTER_LEFT;
-    -fx-padding: 12 16 12 16;
-    -fx-background-radius: 8px;
-    -fx-cursor: hand;
-}
-
-.navigation-button:hover {
-    -fx-background-color: #1f2937;
-    -fx-text-fill: white;
-}
-
-.navigation-button-active {
-    -fx-background-color: #374151;
-    -fx-text-fill: white;
-}
-
-.content-scroll {
-    -fx-background-color: transparent;
-    -fx-background: #f5f7fb;
-    -fx-border-color: transparent;
-}
-
-.content-scroll > .viewport {
-    -fx-background-color: #f5f7fb;
-}
-
-.section-title {
-    -fx-font-size: 24px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #111827;
-}
-
-.section-description {
-    -fx-font-size: 14px;
-    -fx-text-fill: #6b7280;
-}
-
-.metric-card,
-.content-card {
-    -fx-background-color: white;
-    -fx-background-radius: 12px;
-    -fx-border-color: #e5e7eb;
-    -fx-border-radius: 12px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 10, 0, 0, 3);
-}
-
-.metric-value {
-    -fx-font-size: 28px;
-    -fx-font-weight: bold;
-    -fx-text-fill: #111827;
-}
-
-.metric-label {
-    -fx-font-size: 13px;
-    -fx-text-fill: #6b7280;
-}
-
-.placeholder-message {
-    -fx-font-size: 15px;
-    -fx-text-fill: #4b5563;
-}
+.app-header { -fx-background-color: white; -fx-border-color: transparent transparent #e5e7eb transparent; -fx-border-width: 0 0 1 0; }
+.app-title { -fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #111827; }
+.app-subtitle { -fx-font-size: 13px; -fx-text-fill: #6b7280; }
+.navigation { -fx-background-color: #111827; }
+.navigation-button { -fx-background-color: transparent; -fx-text-fill: #d1d5db; -fx-font-size: 14px; -fx-font-weight: bold; -fx-alignment: CENTER_LEFT; -fx-padding: 12 16; -fx-background-radius: 8px; -fx-cursor: hand; }
+.navigation-button:hover { -fx-background-color: #1f2937; -fx-text-fill: white; }
+.navigation-button-active { -fx-background-color: #374151; -fx-text-fill: white; }
+.content-scroll { -fx-background-color: transparent; -fx-background: #f5f7fb; -fx-border-color: transparent; }
+.content-scroll > .viewport { -fx-background-color: #f5f7fb; }
+.section-title { -fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #111827; }
+.section-description { -fx-font-size: 14px; -fx-text-fill: #6b7280; }
+.metric-card, .content-card { -fx-background-color: white; -fx-background-radius: 12px; -fx-border-color: #e5e7eb; -fx-border-radius: 12px; -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.05), 10, 0, 0, 3); }
+.metric-value { -fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #111827; }
+.metric-label { -fx-font-size: 13px; -fx-text-fill: #6b7280; }
+.placeholder-message { -fx-font-size: 15px; -fx-text-fill: #4b5563; }
+.primary-button { -fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 9 18; -fx-background-radius: 8px; -fx-cursor: hand; }
+.primary-button:hover { -fx-background-color: #1d4ed8; }
+.text-field { -fx-background-radius: 7px; -fx-border-radius: 7px; -fx-border-color: #d1d5db; -fx-padding: 9 11; }
+.course-row { -fx-background-color: #f9fafb; -fx-background-radius: 8px; -fx-border-color: #e5e7eb; -fx-border-radius: 8px; }
+.course-code { -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #111827; }
+.course-name { -fx-font-size: 13px; -fx-text-fill: #6b7280; }
