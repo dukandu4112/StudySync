@@ -21,6 +21,8 @@
 .primary-button:hover { -fx-background-color: #1d4ed8; }
 .secondary-button { -fx-background-color: #e5e7eb; -fx-text-fill: #111827; -fx-font-weight: bold; -fx-padding: 8 14; -fx-background-radius: 8px; -fx-cursor: hand; }
 .secondary-button:hover { -fx-background-color: #d1d5db; }
+.danger-button { -fx-background-color: #fee2e2; -fx-text-fill: #b91c1c; -fx-font-weight: bold; -fx-padding: 8 14; -fx-background-radius: 8px; -fx-cursor: hand; }
+.danger-button:hover { -fx-background-color: #fecaca; }
 .text-field, .combo-box, .date-picker { -fx-background-radius: 7px; -fx-border-radius: 7px; -fx-border-color: #d1d5db; }
 .text-field { -fx-padding: 9 11; }
 .course-row { -fx-background-color: #f9fafb; -fx-background-radius: 8px; -fx-border-color: #e5e7eb; -fx-border-radius: 8px; }
