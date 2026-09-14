@@ -2,7 +2,7 @@
 
 All notable changes to StudySync are documented in this file.
 
-## [2.0.0] - Unreleased
+## [2.0.0] - 2026-09-14
 
 ### Added
 
@@ -10,31 +10,37 @@ All notable changes to StudySync are documented in this file.
 - Main desktop navigation for Dashboard, Courses, Assignments, Study Sessions, and Workload
 - JavaFX dashboard backed by real StudySync productivity metrics
 - Course creation and persistent course listing in the desktop UI
-- Assignment creation, completion, reopening, deletion, search, status filtering, and priority filtering in the desktop UI
+- Assignment creation, editing, completion, reopening, deletion, search, status filtering, and priority filtering in the desktop UI
+- Assignment course-code context in desktop assignment and workload views
 - Study-session recording and history in the desktop UI
 - Configurable 3, 7, 14, and 30-day workload planning interface
+- Dedicated overdue-assignment section in the workload planner
 - JavaFX CSS styling for navigation, cards, forms, assignment controls, study sessions, and workload planning
 - UI validation and clearer desktop error feedback
 - Testable `UiSupport` helpers for date/time parsing, duration validation, and assignment filtering
 - JUnit coverage for UI-support behavior without requiring a graphical CI session
+- Architecture documentation for the desktop, CLI, service, domain, persistence, and testing layers
 
 ### Changed
 
 - StudySync now supports both the original CLI and the JavaFX desktop interface on the shared service and SQLite persistence layers
-- GitHub Actions now runs the complete `mvn --batch-mode verify` lifecycle instead of stopping at `mvn test`
-- Maven project version advanced to `2.0.0-SNAPSHOT` during desktop development
-- Documentation updated for JavaFX development, testing, and launch instructions
+- Production JavaFX parsing, duration validation, and assignment filtering use the tested `UiSupport` helpers
+- GitHub Actions runs the complete `mvn --batch-mode verify` lifecycle instead of stopping at `mvn test`
+- Maven project version finalized as `2.0.0`
+- Documentation updated for the finalized JavaFX desktop milestone, testing, architecture, and launch instructions
 
 ### Fixed
 
-- JavaFX navigation now initializes with only the Dashboard navigation item active
+- JavaFX navigation initializes with only the Dashboard navigation item active
 - Study-session totals refresh after a new session is recorded
 - Study-session course lookups avoid repeatedly loading the course collection for every row
 - UI-support tests use the public assignment completion API
+- CLI assignment workflows include reopening completed assignments
+- Local Maven output, SQLite data files, and common IDE metadata are excluded from version control
 
 ### Release Status
 
-StudySync 2.0.0 is still in release preparation. This changelog does not indicate that a GitHub tag or release has been published.
+StudySync 2.0.0 is the finalized repository version for this milestone. This version history does not claim that a corresponding GitHub tag or GitHub Release has been published.
 
 ## [1.0.0] - 2026-09-14
 
@@ -42,7 +48,7 @@ StudySync 2.0.0 is still in release preparation. This changelog does not indicat
 
 - Java 17 and Maven project foundation
 - SQLite persistence with foreign-key enforcement
-- Course creation, retrieval, update, and deletion support
+- Course creation and retrieval support
 - Assignment creation, editing, completion, reopening, deletion, search, and filtering
 - Assignment priority and due-date tracking
 - Pending, completed, overdue, and upcoming assignment views
