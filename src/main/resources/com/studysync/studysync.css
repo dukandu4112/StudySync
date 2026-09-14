@@ -15,6 +15,7 @@
 .metric-label, .course-name, .assignment-meta { -fx-font-size: 13px; -fx-text-fill: #6b7280; }
 .placeholder-message { -fx-font-size: 15px; -fx-text-fill: #4b5563; }
 .card-title, .course-code, .assignment-title { -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #111827; }
+.study-total { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #2563eb; -fx-padding: 0 0 4 0; }
 .primary-button { -fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 9 18; -fx-background-radius: 8px; -fx-cursor: hand; }
 .primary-button:hover { -fx-background-color: #1d4ed8; }
 .secondary-button { -fx-background-color: #e5e7eb; -fx-text-fill: #111827; -fx-font-weight: bold; -fx-padding: 8 14; -fx-background-radius: 8px; -fx-cursor: hand; }
