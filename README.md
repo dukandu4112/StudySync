@@ -2,7 +2,7 @@
 
 StudySync is a Java 17 student productivity desktop application for organizing courses, assignments, study sessions, deadlines, workload, and academic progress. StudySync 2.1 builds on the JavaFX desktop foundation with fuller lifecycle management, stronger planning analytics, improved discovery controls, and more resilient edit workflows while preserving the reusable service, domain, SQLite persistence, automated tests, and original CLI architecture.
 
-**Current development version: 2.1.0-SNAPSHOT**
+**Current version: 2.1.0**
 
 ## Features
 
@@ -83,11 +83,11 @@ StudySync creates `studysync.db` in the working directory and uses it for persis
 
 ## Run the Original CLI
 
-The original CLI remains available as an alternate interface. During 2.1 development, the packaged all-dependencies JAR uses the snapshot version in its filename:
+The original CLI remains available as an alternate interface. The packaged all-dependencies JAR launches the CLI:
 
 ```bash
 mvn clean package
-java -jar target/studysync-2.1.0-SNAPSHOT-all.jar
+java -jar target/studysync-2.1.0-all.jar
 ```
 
 ## Testing
@@ -96,9 +96,9 @@ StudySync uses automated tests across the domain, persistence, service, lifecycl
 
 ## Version Status
 
-StudySync 2.1.0 is currently being finalized on the `develop-2.1` branch. The Maven version remains `2.1.0-SNAPSHOT` until final release-readiness documentation and verification are complete.
+StudySync 2.1.0 is the finalized repository version for the 2.1 milestone on `develop-2.1`, pending the final release-readiness CI verification before promotion to the stable branch.
 
-The stable `main` branch remains on StudySync 2.0.0 during this development cycle. A repository version does not by itself imply that a corresponding GitHub tag or GitHub Release has been published.
+A repository version does not by itself imply that a corresponding GitHub tag or GitHub Release has been published.
 
 ## License
 
