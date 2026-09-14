@@ -5,17 +5,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Application service that coordinates StudySync's core productivity features.
- */
+/** Application service that coordinates StudySync's core productivity features. */
 public class StudySyncService {
-
     private final DatabaseManager databaseManager;
 
     public StudySyncService(DatabaseManager databaseManager) {
         if (databaseManager == null) {
-            throw new IllegalArgumentException(
-                    "Database manager cannot be null.");
+            throw new IllegalArgumentException("Database manager cannot be null.");
         }
         this.databaseManager = databaseManager;
     }
@@ -28,12 +24,25 @@ public class StudySyncService {
         return databaseManager.getAllCourses();
     }
 
-    public Assignment createAssignment(int courseId, String title,
-            String description, LocalDateTime dueDate,
+    public boolean updateCourse(int courseId, String name, String code) {
+        requireCourse(courseId);
+        Course course = new Course(courseId, name, code);
+        return databaseManager.updateCourse(courseId, course.getName(), course.getCode());
+    }
+
+    public boolean deleteCourse(int courseId) {
+        requireCourse(courseId);
+        return databaseManager.deleteCourse(courseId);
+    }
+
+    public Assignment createAssignment(
+            int courseId,
+            String title,
+            String description,
+            LocalDateTime dueDate,
             Assignment.Priority priority) {
         requireCourse(courseId);
-        return databaseManager.addAssignment(
-                courseId, title, description, dueDate, priority);
+        return databaseManager.addAssignment(courseId, title, description, dueDate, priority);
     }
 
     public List<Assignment> getAssignments() {
@@ -66,10 +75,6 @@ public class StudySyncService {
                 .toList();
     }
 
-    /**
-     * Returns pending assignments due from now through the requested number
-     * of days, ordered by due date.
-     */
     public List<Assignment> getUpcomingAssignments(int days) {
         if (days <= 0) {
             throw new IllegalArgumentException(
@@ -78,7 +83,6 @@ public class StudySyncService {
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime deadline = now.plusDays(days);
-
         return databaseManager.getAllAssignments().stream()
                 .filter(assignment -> !assignment.isCompleted())
                 .filter(assignment -> !assignment.getDueDate().isBefore(now))
@@ -87,11 +91,9 @@ public class StudySyncService {
                 .toList();
     }
 
-    public List<Assignment> getAssignmentsByPriority(
-            Assignment.Priority priority) {
+    public List<Assignment> getAssignmentsByPriority(Assignment.Priority priority) {
         if (priority == null) {
-            throw new IllegalArgumentException(
-                    "Assignment priority cannot be null.");
+            throw new IllegalArgumentException("Assignment priority cannot be null.");
         }
         return databaseManager.getAllAssignments().stream()
                 .filter(assignment -> assignment.getPriority() == priority)
@@ -101,33 +103,36 @@ public class StudySyncService {
 
     public List<Assignment> searchAssignments(String query) {
         if (query == null || query.isBlank()) {
-            throw new IllegalArgumentException(
-                    "Search query cannot be empty.");
+            throw new IllegalArgumentException("Search query cannot be empty.");
         }
+
         String normalizedQuery = query.trim().toLowerCase(Locale.ROOT);
         return databaseManager.getAllAssignments().stream()
-                .filter(assignment -> assignment.getTitle()
-                        .toLowerCase(Locale.ROOT).contains(normalizedQuery)
-                        || assignment.getDescription()
-                        .toLowerCase(Locale.ROOT).contains(normalizedQuery))
+                .filter(assignment -> assignment.getTitle().toLowerCase(Locale.ROOT)
+                                .contains(normalizedQuery)
+                        || assignment.getDescription().toLowerCase(Locale.ROOT)
+                                .contains(normalizedQuery))
                 .sorted(Comparator.comparing(Assignment::getDueDate))
                 .toList();
     }
 
-    public boolean updateAssignment(int assignmentId, int courseId,
-            String title, String description, LocalDateTime dueDate,
+    public boolean updateAssignment(
+            int assignmentId,
+            int courseId,
+            String title,
+            String description,
+            LocalDateTime dueDate,
             Assignment.Priority priority) {
         requireAssignment(assignmentId);
         requireCourse(courseId);
-        Assignment validatedAssignment = new Assignment(
-                courseId, title, description, dueDate, priority);
+        Assignment assignment = new Assignment(courseId, title, description, dueDate, priority);
         return databaseManager.updateAssignment(
                 assignmentId,
-                validatedAssignment.getCourseId(),
-                validatedAssignment.getTitle(),
-                validatedAssignment.getDescription(),
-                validatedAssignment.getDueDate(),
-                validatedAssignment.getPriority());
+                assignment.getCourseId(),
+                assignment.getTitle(),
+                assignment.getDescription(),
+                assignment.getDueDate(),
+                assignment.getPriority());
     }
 
     public boolean deleteAssignment(int assignmentId) {
@@ -145,11 +150,10 @@ public class StudySyncService {
         return databaseManager.setAssignmentCompleted(assignmentId, false);
     }
 
-    public StudySession recordStudySession(int courseId,
-            LocalDateTime startTime, int durationMinutes, String notes) {
+    public StudySession recordStudySession(
+            int courseId, LocalDateTime startTime, int durationMinutes, String notes) {
         requireCourse(courseId);
-        return databaseManager.addStudySession(
-                courseId, startTime, durationMinutes, notes);
+        return databaseManager.addStudySession(courseId, startTime, durationMinutes, notes);
     }
 
     public List<StudySession> getStudySessions() {
@@ -159,6 +163,28 @@ public class StudySyncService {
     public List<StudySession> getStudySessionsForCourse(int courseId) {
         requireCourse(courseId);
         return databaseManager.getStudySessionsByCourse(courseId);
+    }
+
+    public boolean updateStudySession(
+            int sessionId,
+            int courseId,
+            LocalDateTime startTime,
+            int durationMinutes,
+            String notes) {
+        requireStudySession(sessionId);
+        requireCourse(courseId);
+        StudySession session = new StudySession(courseId, startTime, durationMinutes, notes);
+        return databaseManager.updateStudySession(
+                sessionId,
+                session.getCourseId(),
+                session.getStartTime(),
+                session.getDurationMinutes(),
+                session.getNotes());
+    }
+
+    public boolean deleteStudySession(int sessionId) {
+        requireStudySession(sessionId);
+        return databaseManager.deleteStudySession(sessionId);
     }
 
     public int getTotalStudyMinutes() {
@@ -179,41 +205,82 @@ public class StudySyncService {
         if (assignments.isEmpty()) {
             return 0.0;
         }
-        long completed = assignments.stream()
-                .filter(Assignment::isCompleted)
-                .count();
+        long completed = assignments.stream().filter(Assignment::isCompleted).count();
         return completed * 100.0 / assignments.size();
     }
 
     public DashboardSummary getDashboardSummary() {
         List<Course> courses = databaseManager.getAllCourses();
         List<Assignment> assignments = databaseManager.getAllAssignments();
-        int completedAssignments = (int) assignments.stream()
-                .filter(Assignment::isCompleted).count();
-        int pendingAssignments = assignments.size() - completedAssignments;
-        int overdueAssignments = (int) assignments.stream()
-                .filter(Assignment::isOverdue).count();
+        int completed = (int) assignments.stream().filter(Assignment::isCompleted).count();
+        int pending = assignments.size() - completed;
+        int overdue = (int) assignments.stream().filter(Assignment::isOverdue).count();
         return new DashboardSummary(
-                courses.size(), assignments.size(), pendingAssignments,
-                completedAssignments, overdueAssignments,
-                getTotalStudyMinutes(), getAssignmentCompletionPercentage());
+                courses.size(),
+                assignments.size(),
+                pending,
+                completed,
+                overdue,
+                getTotalStudyMinutes(),
+                getAssignmentCompletionPercentage());
     }
 
-    private Course requireCourse(int courseId) {
-        Course course = databaseManager.findCourseById(courseId);
+    public DashboardAnalytics getDashboardAnalytics() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Assignment> assignments = databaseManager.getAllAssignments();
+        List<Assignment> pending = assignments.stream()
+                .filter(assignment -> !assignment.isCompleted())
+                .toList();
+
+        int upcoming = (int) pending.stream()
+                .filter(assignment -> !assignment.getDueDate().isBefore(now))
+                .filter(assignment -> !assignment.getDueDate().isAfter(now.plusDays(7)))
+                .count();
+        int highPriority = (int) pending.stream()
+                .filter(assignment -> assignment.getPriority() == Assignment.Priority.HIGH)
+                .count();
+        Assignment nearest = pending.stream()
+                .filter(assignment -> !assignment.getDueDate().isBefore(now))
+                .min(Comparator.comparing(Assignment::getDueDate))
+                .orElse(null);
+
+        Course mostStudied = null;
+        int mostMinutes = 0;
+        for (Course course : databaseManager.getAllCourses()) {
+            int minutes = databaseManager.getStudySessionsByCourse(course.getId()).stream()
+                    .mapToInt(StudySession::getDurationMinutes)
+                    .sum();
+            if (minutes > mostMinutes) {
+                mostMinutes = minutes;
+                mostStudied = course;
+            }
+        }
+
+        return new DashboardAnalytics(
+                upcoming, highPriority, nearest, mostStudied, mostMinutes);
+    }
+
+    private Course requireCourse(int id) {
+        Course course = databaseManager.findCourseById(id);
         if (course == null) {
-            throw new IllegalArgumentException(
-                    "Course does not exist: " + courseId);
+            throw new IllegalArgumentException("Course does not exist: " + id);
         }
         return course;
     }
 
-    private Assignment requireAssignment(int assignmentId) {
-        Assignment assignment = databaseManager.findAssignmentById(assignmentId);
+    private Assignment requireAssignment(int id) {
+        Assignment assignment = databaseManager.findAssignmentById(id);
         if (assignment == null) {
-            throw new IllegalArgumentException(
-                    "Assignment does not exist: " + assignmentId);
+            throw new IllegalArgumentException("Assignment does not exist: " + id);
         }
         return assignment;
+    }
+
+    private StudySession requireStudySession(int id) {
+        StudySession session = databaseManager.findStudySessionById(id);
+        if (session == null) {
+            throw new IllegalArgumentException("Study session does not exist: " + id);
+        }
+        return session;
     }
 }
