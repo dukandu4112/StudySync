@@ -2,6 +2,8 @@
 
 StudySync is a Java 17 student productivity application for organizing courses, assignments, study sessions, deadlines, workload, and academic progress. It uses SQLite for persistent local storage and provides an interactive command-line interface backed by automated JUnit tests and GitHub Actions CI.
 
+**Current release: v1.0.0**
+
 ## Features
 
 - Create and view academic courses
@@ -60,10 +62,10 @@ The packaged all-dependencies JAR is created in `target/` with the `-all.jar` cl
 
 ## Run
 
-After packaging, run StudySync with:
+After packaging, run StudySync v1.0.0 with:
 
 ```bash
-java -jar target/studysync-0.1.0-SNAPSHOT-all.jar
+java -jar target/studysync-1.0.0-all.jar
 ```
 
 StudySync creates `studysync.db` in the working directory and uses it for persistent application data.
@@ -74,7 +76,7 @@ GitHub Actions runs the Maven test suite automatically for pushes and pull reque
 
 ## Roadmap
 
-The current command-line application establishes the core StudySync productivity platform. Future development can build on the same service and persistence layers with a graphical interface, richer analytics, notifications, scheduling enhancements, and additional productivity tools.
+Version 1.0.0 establishes the core StudySync productivity platform. Future development can build on the same service and persistence layers with a graphical interface, richer analytics, notifications, scheduling enhancements, and additional productivity tools.
 
 ## License
 
