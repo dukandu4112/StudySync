@@ -16,6 +16,7 @@
 .placeholder-message { -fx-font-size: 15px; -fx-text-fill: #4b5563; }
 .card-title, .course-code, .assignment-title { -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #111827; }
 .study-total { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #2563eb; -fx-padding: 0 0 4 0; }
+.workload-urgency { -fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #b45309; -fx-padding: 2 8; -fx-background-color: #fef3c7; -fx-background-radius: 10px; }
 .primary-button { -fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 9 18; -fx-background-radius: 8px; -fx-cursor: hand; }
 .primary-button:hover { -fx-background-color: #1d4ed8; }
 .secondary-button { -fx-background-color: #e5e7eb; -fx-text-fill: #111827; -fx-font-weight: bold; -fx-padding: 8 14; -fx-background-radius: 8px; -fx-cursor: hand; }
