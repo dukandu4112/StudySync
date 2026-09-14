@@ -1,9 +1,14 @@
 package com.studysync;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /** Application service that coordinates StudySync's core productivity features. */
 public class StudySyncService {
@@ -198,6 +203,50 @@ public class StudySyncService {
         return databaseManager.getStudySessionsByCourse(courseId).stream()
                 .mapToInt(StudySession::getDurationMinutes)
                 .sum();
+    }
+
+    public StudyProgressAnalytics getStudyProgressAnalytics() {
+        return getStudyProgressAnalytics(LocalDate.now());
+    }
+
+    public StudyProgressAnalytics getStudyProgressAnalytics(LocalDate referenceDate) {
+        if (referenceDate == null) {
+            throw new IllegalArgumentException("Study progress reference date cannot be null.");
+        }
+
+        LocalDate weekStart = referenceDate.with(
+                TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate weekEnd = weekStart.plusDays(6);
+        LocalDateTime startInclusive = weekStart.atStartOfDay();
+        LocalDateTime endExclusive = weekStart.plusDays(7).atStartOfDay();
+
+        List<StudySession> weeklySessions = databaseManager.getAllStudySessions().stream()
+                .filter(session -> !session.getStartTime().isBefore(startInclusive))
+                .filter(session -> session.getStartTime().isBefore(endExclusive))
+                .toList();
+
+        int totalMinutes = weeklySessions.stream()
+                .mapToInt(StudySession::getDurationMinutes)
+                .sum();
+        int longestSession = weeklySessions.stream()
+                .mapToInt(StudySession::getDurationMinutes)
+                .max()
+                .orElse(0);
+        Set<LocalDate> activeDays = weeklySessions.stream()
+                .map(session -> session.getStartTime().toLocalDate())
+                .collect(Collectors.toSet());
+        double averageMinutesPerStudyDay = activeDays.isEmpty()
+                ? 0.0
+                : totalMinutes / (double) activeDays.size();
+
+        return new StudyProgressAnalytics(
+                weekStart,
+                weekEnd,
+                totalMinutes,
+                weeklySessions.size(),
+                activeDays.size(),
+                longestSession,
+                averageMinutesPerStudyDay);
     }
 
     public double getAssignmentCompletionPercentage() {
