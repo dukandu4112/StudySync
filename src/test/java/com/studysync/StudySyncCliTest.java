@@ -45,7 +45,6 @@ class StudySyncCliTest {
     @Test
     void nullServiceIsRejected() {
         Scanner scanner = new Scanner("0\n");
-
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new StudySyncCli(null, scanner));
@@ -61,7 +60,6 @@ class StudySyncCliTest {
     @Test
     void exitOptionClosesApplication() {
         runCli("0\n");
-
         String text = output.toString();
         assertTrue(text.contains("StudySync"));
         assertTrue(text.contains("StudySync closed"));
@@ -70,7 +68,6 @@ class StudySyncCliTest {
     @Test
     void invalidMenuOptionShowsValidationMessage() {
         runCli("99\n0\n");
-
         assertTrue(output.toString().contains(
                 "Invalid option. Please try again."));
     }
@@ -78,20 +75,15 @@ class StudySyncCliTest {
     @Test
     void addCourseThroughCliPersistsCourse() {
         runCli("2\nData Structures\nCSCI 3300\n0\n");
-
         assertEquals(1, service.getCourses().size());
-        assertEquals(
-                "CSCI 3300",
-                service.getCourses().get(0).getCode());
+        assertEquals("CSCI 3300", service.getCourses().get(0).getCode());
         assertTrue(output.toString().contains("Added course"));
     }
 
     @Test
     void dashboardOptionDisplaysMetrics() {
         service.createCourse("Data Structures", "CSCI 3300");
-
         runCli("1\n0\n");
-
         String text = output.toString();
         assertTrue(text.contains("--- Dashboard ---"));
         assertTrue(text.contains("Courses: 1"));
@@ -109,7 +101,6 @@ class StudySyncCliTest {
                 Assignment.Priority.HIGH);
 
         runCli("9\nbinary\n0\n");
-
         String text = output.toString();
         assertTrue(text.contains("--- Search Results ---"));
         assertTrue(text.contains("Binary Search Review"));
@@ -118,25 +109,15 @@ class StudySyncCliTest {
 
     @Test
     void priorityFilterOptionOnlyDisplaysSelectedPriority() {
-        Course course = service.createCourse(
-                "Data Structures",
-                "CSCI 3300");
-
+        Course course = service.createCourse("Data Structures", "CSCI 3300");
         service.createAssignment(
-                course.getId(),
-                "Critical Project",
-                "",
-                LocalDateTime.now().plusDays(1),
-                Assignment.Priority.HIGH);
+                course.getId(), "Critical Project", "",
+                LocalDateTime.now().plusDays(1), Assignment.Priority.HIGH);
         service.createAssignment(
-                course.getId(),
-                "Optional Reading",
-                "",
-                LocalDateTime.now().plusDays(2),
-                Assignment.Priority.LOW);
+                course.getId(), "Optional Reading", "",
+                LocalDateTime.now().plusDays(2), Assignment.Priority.LOW);
 
         runCli("10\nHIGH\n0\n");
-
         String text = output.toString();
         assertTrue(text.contains("--- HIGH Priority Assignments ---"));
         assertTrue(text.contains("Critical Project"));
@@ -147,15 +128,11 @@ class StudySyncCliTest {
     void pendingAssignmentsOptionExcludesCompletedWork() {
         Course course = createCourseWithAssignments();
         Assignment completed = service.createAssignment(
-                course.getId(),
-                "Finished Homework",
-                "",
-                LocalDateTime.now().plusDays(2),
-                Assignment.Priority.MEDIUM);
+                course.getId(), "Finished Homework", "",
+                LocalDateTime.now().plusDays(2), Assignment.Priority.MEDIUM);
         service.completeAssignment(completed.getId());
 
         runCli("11\n0\n");
-
         String text = output.toString();
         assertTrue(text.contains("--- Pending Assignments ---"));
         assertTrue(text.contains("Pending Homework"));
@@ -166,15 +143,11 @@ class StudySyncCliTest {
     void completedAssignmentsOptionOnlyDisplaysCompletedWork() {
         Course course = createCourseWithAssignments();
         Assignment completed = service.createAssignment(
-                course.getId(),
-                "Finished Homework",
-                "",
-                LocalDateTime.now().plusDays(2),
-                Assignment.Priority.MEDIUM);
+                course.getId(), "Finished Homework", "",
+                LocalDateTime.now().plusDays(2), Assignment.Priority.MEDIUM);
         service.completeAssignment(completed.getId());
 
         runCli("12\n0\n");
-
         String text = output.toString();
         assertTrue(text.contains("--- Completed Assignments ---"));
         assertTrue(text.contains("Finished Homework"));
@@ -183,25 +156,15 @@ class StudySyncCliTest {
 
     @Test
     void overdueAssignmentsOptionOnlyDisplaysOverdueWork() {
-        Course course = service.createCourse(
-                "Linear Algebra",
-                "MATH 2502");
-
+        Course course = service.createCourse("Linear Algebra", "MATH 2502");
         service.createAssignment(
-                course.getId(),
-                "Late Matrix Homework",
-                "",
-                LocalDateTime.now().minusDays(1),
-                Assignment.Priority.HIGH);
+                course.getId(), "Late Matrix Homework", "",
+                LocalDateTime.now().minusDays(1), Assignment.Priority.HIGH);
         service.createAssignment(
-                course.getId(),
-                "Future Matrix Homework",
-                "",
-                LocalDateTime.now().plusDays(2),
-                Assignment.Priority.MEDIUM);
+                course.getId(), "Future Matrix Homework", "",
+                LocalDateTime.now().plusDays(2), Assignment.Priority.MEDIUM);
 
         runCli("13\n0\n");
-
         String text = output.toString();
         assertTrue(text.contains("--- Overdue Assignments ---"));
         assertTrue(text.contains("Late Matrix Homework"));
@@ -211,20 +174,88 @@ class StudySyncCliTest {
     @Test
     void searchWithNoMatchesShowsEmptyMessage() {
         createCourseWithAssignments();
-
         runCli("9\nnonexistent\n0\n");
-
         String text = output.toString();
         assertTrue(text.contains("--- Search Results ---"));
         assertTrue(text.contains("No assignments found."));
     }
 
     @Test
-    void positiveNumberInputRetriesAfterInvalidValues() {
-        Course course = service.createCourse(
-                "Data Structures",
-                "CSCI 3300");
+    void editAssignmentThroughCliUpdatesAssignment() {
+        Course firstCourse = service.createCourse("Data Structures", "CSCI 3300");
+        Course secondCourse = service.createCourse("Linear Algebra", "MATH 2502");
+        Assignment assignment = service.createAssignment(
+                firstCourse.getId(), "Old Homework", "Old notes",
+                LocalDateTime.of(2026, 9, 20, 9, 0), Assignment.Priority.LOW);
 
+        runCli(
+                "14\n"
+                        + assignment.getId() + "\n"
+                        + secondCourse.getId() + "\n"
+                        + "Updated Homework\n"
+                        + "New matrix notes\n"
+                        + "2026-09-25T14:30\n"
+                        + "HIGH\n"
+                        + "0\n");
+
+        Assignment updated = service.getAssignments().get(0);
+        assertEquals(secondCourse.getId(), updated.getCourseId());
+        assertEquals("Updated Homework", updated.getTitle());
+        assertEquals("New matrix notes", updated.getDescription());
+        assertEquals(LocalDateTime.of(2026, 9, 25, 14, 30), updated.getDueDate());
+        assertEquals(Assignment.Priority.HIGH, updated.getPriority());
+        assertTrue(output.toString().contains("Assignment updated successfully."));
+    }
+
+    @Test
+    void confirmedDeleteAssignmentThroughCliRemovesAssignment() {
+        Course course = service.createCourse("Data Structures", "CSCI 3300");
+        Assignment assignment = service.createAssignment(
+                course.getId(), "Delete Me", "",
+                LocalDateTime.now().plusDays(1), Assignment.Priority.MEDIUM);
+
+        runCli("15\n" + assignment.getId() + "\nYES\n0\n");
+
+        assertTrue(service.getAssignments().isEmpty());
+        assertTrue(output.toString().contains("Assignment deleted successfully."));
+    }
+
+    @Test
+    void cancelledDeleteAssignmentThroughCliKeepsAssignment() {
+        Course course = service.createCourse("Data Structures", "CSCI 3300");
+        Assignment assignment = service.createAssignment(
+                course.getId(), "Keep Me", "",
+                LocalDateTime.now().plusDays(1), Assignment.Priority.MEDIUM);
+
+        runCli("15\n" + assignment.getId() + "\nNO\n0\n");
+
+        assertEquals(1, service.getAssignments().size());
+        assertEquals("Keep Me", service.getAssignments().get(0).getTitle());
+        assertTrue(output.toString().contains("Assignment deletion cancelled."));
+    }
+
+    @Test
+    void editAndDeleteMissingAssignmentsReturnToMenu() {
+        Course course = service.createCourse("Data Structures", "CSCI 3300");
+
+        runCli(
+                "14\n999\n"
+                        + course.getId() + "\n"
+                        + "Missing\n"
+                        + "No assignment\n"
+                        + "2026-09-25T14:30\n"
+                        + "HIGH\n"
+                        + "15\n999\nYES\n"
+                        + "0\n");
+
+        String text = output.toString();
+        assertTrue(text.contains("Error: Assignment does not exist: 999"));
+        assertTrue(text.contains("StudySync closed"));
+    }
+
+    @Test
+    void positiveNumberInputRetriesAfterInvalidValues() {
+        Course course = service.createCourse("Data Structures", "CSCI 3300");
         runCli(
                 "7\n"
                         + "abc\n"
@@ -234,7 +265,6 @@ class StudySyncCliTest {
                         + "60\n"
                         + "Graphs\n"
                         + "0\n");
-
         assertEquals(1, service.getStudySessions().size());
         assertTrue(output.toString().contains(
                 "Please enter a positive whole number."));
@@ -242,10 +272,7 @@ class StudySyncCliTest {
 
     @Test
     void dateTimeInputRetriesAfterInvalidValue() {
-        Course course = service.createCourse(
-                "Data Structures",
-                "CSCI 3300");
-
+        Course course = service.createCourse("Data Structures", "CSCI 3300");
         runCli(
                 "7\n"
                         + course.getId() + "\n"
@@ -254,18 +281,13 @@ class StudySyncCliTest {
                         + "45\n"
                         + "Trees\n"
                         + "0\n");
-
         assertEquals(1, service.getStudySessions().size());
-        assertTrue(output.toString().contains(
-                "Invalid date/time."));
+        assertTrue(output.toString().contains("Invalid date/time."));
     }
 
     @Test
     void priorityInputRetriesAfterInvalidValue() {
-        Course course = service.createCourse(
-                "Linear Algebra",
-                "MATH 2502");
-
+        Course course = service.createCourse("Linear Algebra", "MATH 2502");
         runCli(
                 "4\n"
                         + course.getId() + "\n"
@@ -275,7 +297,6 @@ class StudySyncCliTest {
                         + "urgent\n"
                         + "HIGH\n"
                         + "0\n");
-
         assertEquals(1, service.getAssignments().size());
         assertEquals(
                 Assignment.Priority.HIGH,
@@ -294,24 +315,19 @@ class StudySyncCliTest {
                         + "2026-09-23T09:00\n"
                         + "HIGH\n"
                         + "0\n");
-
         String text = output.toString();
         assertTrue(text.contains("Error: Course does not exist: 999"));
         assertTrue(text.contains("StudySync closed"));
     }
 
     private Course createCourseWithAssignments() {
-        Course course = service.createCourse(
-                "Data Structures",
-                "CSCI 3300");
-
+        Course course = service.createCourse("Data Structures", "CSCI 3300");
         service.createAssignment(
                 course.getId(),
                 "Pending Homework",
                 "Practice trees",
                 LocalDateTime.now().plusDays(1),
                 Assignment.Priority.HIGH);
-
         return course;
     }
 
