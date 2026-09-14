@@ -4,12 +4,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
 /**
- * Pure helper logic used by the JavaFX layer. Keeping parsing and filtering
- * here makes UI behavior testable without launching a graphical toolkit.
+ * Pure helper logic used by the JavaFX layer. Keeping parsing, filtering,
+ * and sorting here makes UI behavior testable without launching JavaFX.
  */
 public final class UiSupport {
     private UiSupport() { }
@@ -43,12 +44,25 @@ public final class UiSupport {
         }
     }
 
+    public static List<Course> filterCourses(List<Course> courses, String query) {
+        if (courses == null) {
+            throw new IllegalArgumentException("Courses cannot be null.");
+        }
+        String normalizedQuery = normalize(query);
+        return courses.stream()
+                .filter(course -> normalizedQuery.isEmpty()
+                        || course.getCode().toLowerCase(Locale.ROOT).contains(normalizedQuery)
+                        || course.getName().toLowerCase(Locale.ROOT).contains(normalizedQuery))
+                .sorted(Comparator.comparing(Course::getCode))
+                .toList();
+    }
+
     public static List<Assignment> filterAssignments(List<Assignment> assignments,
             String query, String status, String priority) {
         if (assignments == null) {
             throw new IllegalArgumentException("Assignments cannot be null.");
         }
-        String normalizedQuery = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
+        String normalizedQuery = normalize(query);
         String normalizedStatus = status == null ? "All" : status;
         String normalizedPriority = priority == null ? "All" : priority;
 
@@ -64,6 +78,25 @@ public final class UiSupport {
                 })
                 .filter(a -> normalizedPriority.equals("All")
                         || a.getPriority().name().equals(normalizedPriority))
+                .sorted(Comparator.comparing(Assignment::getDueDate))
                 .toList();
+    }
+
+    public static List<StudySession> filterStudySessions(List<StudySession> sessions,
+            Integer courseId, String query) {
+        if (sessions == null) {
+            throw new IllegalArgumentException("Study sessions cannot be null.");
+        }
+        String normalizedQuery = normalize(query);
+        return sessions.stream()
+                .filter(session -> courseId == null || session.getCourseId() == courseId)
+                .filter(session -> normalizedQuery.isEmpty()
+                        || session.getNotes().toLowerCase(Locale.ROOT).contains(normalizedQuery))
+                .sorted(Comparator.comparing(StudySession::getStartTime).reversed())
+                .toList();
+    }
+
+    private static String normalize(String value) {
+        return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 }
