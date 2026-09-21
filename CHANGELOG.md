@@ -2,6 +2,33 @@
 
 All notable changes to StudySync are documented in this file.
 
+## [2.2.0] - Unreleased
+
+### Added
+
+- Weekly study-progress analytics for a Monday-through-Sunday week
+- Weekly metrics for total study minutes, session count, active study days, longest session, and average minutes per active study day
+- JavaFX weekly study-progress dashboard presentation with consistency progress and active-day messaging
+- Assignment urgency planning model for pending assignments
+- Assignment classifications for Overdue, Due Today, Due Soon, and Upcoming work
+- Deterministic assignment-plan ranking by urgency, priority, deadline, and assignment ID
+- JavaFX assignment-plan dashboard preview showing the five highest-ranked assignments
+- Human-readable assignment countdown context such as minutes/hours/days left or late
+- StudySync 2.2 dashboard composition combining existing metrics, weekly progress, assignment planning, and planning insights
+- Automated coverage for weekly progress analytics and assignment urgency/ranking behavior
+
+### Changed
+
+- Maven development version advanced to `2.2.0-SNAPSHOT`
+- GitHub Actions development-branch verification moved from `develop-2.1` to `develop-2.2`
+- `mvn javafx:run` launches the enhanced StudySync 2.2 desktop entry point
+- Dashboard now surfaces weekly study consistency and ranked pending-work priorities alongside the existing academic metrics and planning insights
+- README updated for the active 2.2 development milestone and current launch/build instructions
+
+### Development Status
+
+StudySync 2.2.0 remains unreleased on `develop-2.2`. The weekly study-progress and assignment-planning milestones are implemented, integrated into the desktop dashboard, and CI-verified. No 2.2 tag or GitHub Release is claimed by this entry.
+
 ## [2.1.0] - 2026-09-14
 
 ### Added
@@ -20,7 +47,6 @@ All notable changes to StudySync are documented in this file.
 ### Changed
 
 - Maven project version finalized as `2.1.0`
-- GitHub Actions verifies both the stable `main` branch and the `develop-2.1` development branch
 - Course lists are consistently sorted by course code in UI-support discovery logic
 - Study-session discovery results are ordered newest first
 - `StudySyncService` formatting was cleaned up for maintainability without changing its public workflows
@@ -36,7 +62,7 @@ All notable changes to StudySync are documented in this file.
 
 ### Release Status
 
-StudySync 2.1.0 is the finalized repository version for the 2.1 milestone on `develop-2.1`, pending final release-readiness CI verification before promotion to the stable branch. This changelog entry does not claim that a GitHub tag or GitHub Release has been published.
+StudySync 2.1.0 is the latest stable version on `main` and was published as the official GitHub Release `v2.1.0`.
 
 ## [2.0.0] - 2026-09-14
 
