@@ -1,8 +1,9 @@
 # StudySync
 
-StudySync is a Java 17 student productivity desktop application for organizing courses, assignments, study sessions, deadlines, workload, and academic progress. StudySync 2.1 builds on the JavaFX desktop foundation with fuller lifecycle management, stronger planning analytics, improved discovery controls, and more resilient edit workflows while preserving the reusable service, domain, SQLite persistence, automated tests, and original CLI architecture.
+StudySync is a Java 17 student productivity desktop application for organizing courses, assignments, study sessions, deadlines, workload, and academic progress. StudySync 2.2 builds on the JavaFX desktop foundation with weekly study-progress analytics and ranked assignment planning while preserving the reusable service, domain, SQLite persistence, automated tests, and original CLI architecture.
 
-**Current version: 2.1.0**
+**Development version: 2.2.0-SNAPSHOT**  
+**Latest stable release: 2.1.0**
 
 ## Features
 
@@ -11,12 +12,16 @@ StudySync is a Java 17 student productivity desktop application for organizing c
 - Safely cascade course deletion to associated assignments and study sessions
 - Create, edit, complete, reopen, delete, search, and filter assignments
 - Track due dates, descriptions, priorities, completion status, and associated course codes
+- Rank pending assignments by urgency, priority, deadline, and assignment ID
+- Classify pending work as Overdue, Due Today, Due Soon, or Upcoming
+- Preview the five highest-ranked assignments directly on the dashboard with time-left/time-late context
 - Filter assignments by status and priority
 - Plan upcoming workload using 3, 7, 14, or 30-day windows
 - Review overdue assignments separately in the workload planner
 - Record, edit, delete, search, filter, and review study sessions
 - Filter study-session history by course and search study notes
 - Track total study time
+- Review weekly study progress from Monday through Sunday, including minutes, session count, active study days, longest session, and daily average
 - View academic progress metrics for courses, assignments, overdue work, completion, and study time
 - Review planning insights for upcoming work, high-priority pending work, the nearest deadline, and the most-studied course
 - Persist application data locally with SQLite
@@ -40,21 +45,27 @@ StudySync separates the user interface from reusable application logic:
 ```text
 src/
 ├── main/java/com/studysync/
-│   ├── StudySyncApplication.java   # JavaFX desktop UI
-│   ├── UiSupport.java              # testable UI parsing/filtering helpers
-│   ├── Main.java                   # CLI entry point
-│   ├── StudySyncCli.java           # original command-line UI
-│   ├── StudySyncService.java       # application workflows
-│   ├── DatabaseManager.java        # SQLite persistence
+│   ├── StudySyncApplication.java
+│   ├── StudySyncDesktopApplication.java # 2.2 desktop entry point
+│   ├── DashboardView.java               # 2.2 dashboard composition
+│   ├── StudyProgressView.java
+│   ├── AssignmentPlanView.java
+│   ├── UiSupport.java
+│   ├── Main.java                        # CLI entry point
+│   ├── StudySyncCli.java
+│   ├── StudySyncService.java
+│   ├── DatabaseManager.java
 │   ├── Course.java
 │   ├── Assignment.java
+│   ├── AssignmentPlanItem.java
 │   ├── StudySession.java
 │   ├── DashboardSummary.java
-│   └── DashboardAnalytics.java
+│   ├── DashboardAnalytics.java
+│   └── StudyProgressAnalytics.java
 ├── main/resources/com/studysync/
-│   └── studysync.css               # JavaFX styling
+│   └── studysync.css
 └── test/java/com/studysync/
-    └── unit, integration, service, lifecycle, CLI, and UI-support tests
+    └── unit, integration, service, lifecycle, analytics, planning, CLI, and UI-support tests
 ```
 
 The JavaFX and CLI interfaces share the same service and persistence layers, keeping business logic out of the presentation layer and avoiding duplicated data-access code. See `docs/ARCHITECTURE.md` for the architecture guide.
@@ -63,17 +74,13 @@ The JavaFX and CLI interfaces share the same service and persistence layers, kee
 
 Requirements: JDK 17+ and Maven.
 
-Run the complete Maven verification lifecycle:
-
 ```bash
 mvn clean verify
 ```
 
-GitHub Actions runs `mvn --batch-mode verify` for pushes to `main` and `develop-2.1`, and for configured pull requests.
+GitHub Actions runs `mvn --batch-mode verify` for pushes to `main` and `develop-2.2`, and for configured pull requests.
 
 ## Run the JavaFX Desktop Application
-
-Launch the primary StudySync desktop interface with:
 
 ```bash
 mvn javafx:run
@@ -83,22 +90,22 @@ StudySync creates `studysync.db` in the working directory and uses it for persis
 
 ## Run the Original CLI
 
-The original CLI remains available as an alternate interface. The packaged all-dependencies JAR launches the CLI:
+The original CLI remains available as an alternate interface. During 2.2 development, the packaged all-dependencies JAR uses the snapshot version:
 
 ```bash
 mvn clean package
-java -jar target/studysync-2.1.0-all.jar
+java -jar target/studysync-2.2.0-SNAPSHOT-all.jar
 ```
 
 ## Testing
 
-StudySync uses automated tests across the domain, persistence, service, lifecycle, CLI, and UI-support layers. JavaFX parsing and filtering logic is extracted into pure helper code so it can be verified in CI without requiring a graphical desktop session. Course and study-session discovery behavior is covered through these testable helpers, while service tests cover lifecycle and analytics behavior.
+StudySync uses automated tests across the domain, persistence, service, lifecycle, analytics, planning, CLI, and UI-support layers. Weekly progress calculations and assignment urgency/ranking behavior have dedicated automated coverage. JavaFX parsing and filtering logic remains extracted into pure helper code where appropriate so it can be verified in CI without requiring a graphical desktop session.
 
 ## Version Status
 
-StudySync 2.1.0 is the finalized repository version for the 2.1 milestone on `develop-2.1`, pending the final release-readiness CI verification before promotion to the stable branch.
+StudySync 2.2.0 is currently under development on `develop-2.2`. The weekly study-progress and assignment-planning milestones are implemented, integrated into the enhanced desktop dashboard, and CI-verified.
 
-A repository version does not by itself imply that a corresponding GitHub tag or GitHub Release has been published.
+StudySync 2.1.0 remains the latest stable version on `main` and has an official GitHub Release tagged `v2.1.0`.
 
 ## License
 
