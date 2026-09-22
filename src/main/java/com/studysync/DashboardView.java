@@ -20,6 +20,7 @@ public final class DashboardView {
         DashboardAnalytics analytics = service.getDashboardAnalytics();
         StudyProgressAnalytics progress = service.getStudyProgressAnalytics();
         StudyStreak streak = service.getStudyStreak();
+        StudyTrend trend = service.getStudyTrend();
 
         GridPane metrics = new GridPane();
         metrics.setHgap(16);
@@ -52,6 +53,7 @@ public final class DashboardView {
         return new VBox(18,
                 metrics,
                 card("This Week", StudyProgressView.create(progress)),
+                card("Weekly Trend", StudyTrendView.create(trend)),
                 card("Study Streak", StudyStreakView.create(streak)),
                 card("What Needs Attention", AssignmentPlanView.create(service.getAssignmentPlan())),
                 card("Planning Insights", insights));
