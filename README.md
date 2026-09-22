@@ -1,6 +1,6 @@
 # StudySync
 
-StudySync is a Java 17 student productivity desktop application for organizing courses, assignments, study sessions, deadlines, workload, and academic progress. StudySync 2.2 builds on the JavaFX desktop foundation with weekly study-progress analytics and ranked assignment planning while preserving the reusable service, domain, SQLite persistence, automated tests, and original CLI architecture.
+StudySync is a Java 17 student productivity desktop application for organizing courses, assignments, study sessions, deadlines, workload, and academic progress. StudySync 2.2 builds on the JavaFX desktop foundation with weekly study-progress analytics, ranked assignment planning, study streak tracking, and week-over-week study trends while preserving the reusable service, domain, SQLite persistence, automated tests, and original CLI architecture.
 
 **Development version: 2.2.0-SNAPSHOT**  
 **Latest stable release: 2.1.0**
@@ -22,6 +22,8 @@ StudySync is a Java 17 student productivity desktop application for organizing c
 - Filter study-session history by course and search study notes
 - Track total study time
 - Review weekly study progress from Monday through Sunday, including minutes, session count, active study days, longest session, and daily average
+- Track current and longest study streaks with last-study-day and continue/restart guidance
+- Compare this week's study time with the previous week using minute change, percentage change, and up/down/steady trend direction
 - View academic progress metrics for courses, assignments, overdue work, completion, and study time
 - Review planning insights for upcoming work, high-priority pending work, the nearest deadline, and the most-studied course
 - Persist application data locally with SQLite
@@ -49,6 +51,8 @@ src/
 │   ├── StudySyncDesktopApplication.java # 2.2 desktop entry point
 │   ├── DashboardView.java               # 2.2 dashboard composition
 │   ├── StudyProgressView.java
+│   ├── StudyStreakView.java
+│   ├── StudyTrendView.java
 │   ├── AssignmentPlanView.java
 │   ├── UiSupport.java
 │   ├── Main.java                        # CLI entry point
@@ -59,6 +63,8 @@ src/
 │   ├── Assignment.java
 │   ├── AssignmentPlanItem.java
 │   ├── StudySession.java
+│   ├── StudyStreak.java
+│   ├── StudyTrend.java
 │   ├── DashboardSummary.java
 │   ├── DashboardAnalytics.java
 │   └── StudyProgressAnalytics.java
@@ -99,11 +105,11 @@ java -jar target/studysync-2.2.0-SNAPSHOT-all.jar
 
 ## Testing
 
-StudySync uses automated tests across the domain, persistence, service, lifecycle, analytics, planning, CLI, and UI-support layers. Weekly progress calculations and assignment urgency/ranking behavior have dedicated automated coverage. JavaFX parsing and filtering logic remains extracted into pure helper code where appropriate so it can be verified in CI without requiring a graphical desktop session.
+StudySync uses automated tests across the domain, persistence, service, lifecycle, analytics, planning, CLI, and UI-support layers. Weekly progress calculations, assignment urgency/ranking behavior, study streak calculations, and weekly trend comparisons have dedicated automated coverage. JavaFX parsing and filtering logic remains extracted into pure helper code where appropriate so it can be verified in CI without requiring a graphical desktop session.
 
 ## Version Status
 
-StudySync 2.2.0 is currently under development on `develop-2.2`. The weekly study-progress and assignment-planning milestones are implemented, integrated into the enhanced desktop dashboard, and CI-verified.
+StudySync 2.2.0 is currently under development on `develop-2.2`. The weekly study-progress, assignment-planning, study-streak, and weekly study-trend milestones are implemented, integrated into the enhanced desktop dashboard, and CI-verified.
 
 StudySync 2.1.0 remains the latest stable version on `main` and has an official GitHub Release tagged `v2.1.0`.
 
