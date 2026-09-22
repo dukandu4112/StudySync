@@ -14,20 +14,24 @@ All notable changes to StudySync are documented in this file.
 - Deterministic assignment-plan ranking by urgency, priority, deadline, and assignment ID
 - JavaFX assignment-plan dashboard preview showing the five highest-ranked assignments
 - Human-readable assignment countdown context such as minutes/hours/days left or late
-- StudySync 2.2 dashboard composition combining existing metrics, weekly progress, assignment planning, and planning insights
-- Automated coverage for weekly progress analytics and assignment urgency/ranking behavior
+- Study streak tracking with current streak, longest streak, last study date, and contextual continue/restart guidance
+- JavaFX study-streak dashboard presentation
+- Week-over-week study trend comparison using current-week minutes, previous-week minutes, minute change, percentage change, and up/down/steady direction
+- JavaFX weekly study-trend dashboard presentation
+- StudySync 2.2 dashboard composition combining existing metrics, weekly progress, study streaks, weekly trends, assignment planning, and planning insights
+- Automated coverage for weekly progress analytics, assignment urgency/ranking behavior, study streak tracking, and weekly study-trend calculations
 
 ### Changed
 
 - Maven development version advanced to `2.2.0-SNAPSHOT`
 - GitHub Actions development-branch verification moved from `develop-2.1` to `develop-2.2`
 - `mvn javafx:run` launches the enhanced StudySync 2.2 desktop entry point
-- Dashboard now surfaces weekly study consistency and ranked pending-work priorities alongside the existing academic metrics and planning insights
+- Dashboard now surfaces weekly study consistency, study streaks, week-over-week study trends, and ranked pending-work priorities alongside the existing academic metrics and planning insights
 - README updated for the active 2.2 development milestone and current launch/build instructions
 
 ### Development Status
 
-StudySync 2.2.0 remains unreleased on `develop-2.2`. The weekly study-progress and assignment-planning milestones are implemented, integrated into the desktop dashboard, and CI-verified. No 2.2 tag or GitHub Release is claimed by this entry.
+StudySync 2.2.0 remains unreleased on `develop-2.2`. The weekly study-progress, assignment-planning, study-streak, and weekly study-trend milestones are implemented, integrated into the desktop dashboard, and CI-verified. No 2.2 tag or GitHub Release is claimed by this entry.
 
 ## [2.1.0] - 2026-09-14
 
