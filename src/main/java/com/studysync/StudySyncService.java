@@ -177,6 +177,35 @@ public class StudySyncService {
         return new StudyProgressAnalytics(weekStart, weekEnd, totalMinutes, weeklySessions.size(), activeDays.size(), longestSession, average);
     }
 
+    public StudyTrend getStudyTrend() { return getStudyTrend(LocalDate.now()); }
+
+    public StudyTrend getStudyTrend(LocalDate referenceDate) {
+        if (referenceDate == null) throw new IllegalArgumentException("Study trend reference date cannot be null.");
+
+        LocalDate currentWeekStart = referenceDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate previousWeekStart = currentWeekStart.minusWeeks(1);
+        LocalDateTime previousStartInclusive = previousWeekStart.atStartOfDay();
+        LocalDateTime currentStartInclusive = currentWeekStart.atStartOfDay();
+        LocalDateTime nextWeekStartExclusive = currentWeekStart.plusWeeks(1).atStartOfDay();
+
+        int previousMinutes = databaseManager.getAllStudySessions().stream()
+                .filter(session -> !session.getStartTime().isBefore(previousStartInclusive))
+                .filter(session -> session.getStartTime().isBefore(currentStartInclusive))
+                .mapToInt(StudySession::getDurationMinutes)
+                .sum();
+        int currentMinutes = databaseManager.getAllStudySessions().stream()
+                .filter(session -> !session.getStartTime().isBefore(currentStartInclusive))
+                .filter(session -> session.getStartTime().isBefore(nextWeekStartExclusive))
+                .mapToInt(StudySession::getDurationMinutes)
+                .sum();
+
+        int minuteChange = currentMinutes - previousMinutes;
+        double percentageChange = previousMinutes == 0
+                ? 0.0
+                : minuteChange * 100.0 / previousMinutes;
+        return new StudyTrend(currentWeekStart, currentMinutes, previousMinutes, minuteChange, percentageChange);
+    }
+
     public StudyStreak getStudyStreak() { return getStudyStreak(LocalDate.now()); }
 
     public StudyStreak getStudyStreak(LocalDate referenceDate) {
