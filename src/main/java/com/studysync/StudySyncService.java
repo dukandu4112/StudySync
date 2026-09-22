@@ -177,6 +177,47 @@ public class StudySyncService {
         return new StudyProgressAnalytics(weekStart, weekEnd, totalMinutes, weeklySessions.size(), activeDays.size(), longestSession, average);
     }
 
+    public StudyStreak getStudyStreak() { return getStudyStreak(LocalDate.now()); }
+
+    public StudyStreak getStudyStreak(LocalDate referenceDate) {
+        if (referenceDate == null) throw new IllegalArgumentException("Study streak reference date cannot be null.");
+
+        List<LocalDate> studyDays = databaseManager.getAllStudySessions().stream()
+                .map(session -> session.getStartTime().toLocalDate())
+                .filter(date -> !date.isAfter(referenceDate))
+                .distinct()
+                .sorted()
+                .toList();
+
+        if (studyDays.isEmpty()) {
+            return new StudyStreak(referenceDate, 0, 0, false, null);
+        }
+
+        int longestStreak = 1;
+        int runningStreak = 1;
+        for (int i = 1; i < studyDays.size(); i++) {
+            if (studyDays.get(i).equals(studyDays.get(i - 1).plusDays(1))) {
+                runningStreak++;
+            } else {
+                runningStreak = 1;
+            }
+            longestStreak = Math.max(longestStreak, runningStreak);
+        }
+
+        LocalDate lastStudyDate = studyDays.get(studyDays.size() - 1);
+        int currentStreak = 1;
+        for (int i = studyDays.size() - 1; i > 0; i--) {
+            if (studyDays.get(i - 1).equals(studyDays.get(i).minusDays(1))) {
+                currentStreak++;
+            } else {
+                break;
+            }
+        }
+
+        return new StudyStreak(referenceDate, currentStreak, longestStreak,
+                lastStudyDate.equals(referenceDate), lastStudyDate);
+    }
+
     public double getAssignmentCompletionPercentage() {
         List<Assignment> assignments = databaseManager.getAllAssignments();
         if (assignments.isEmpty()) return 0.0;
