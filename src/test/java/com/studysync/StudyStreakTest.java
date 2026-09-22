@@ -13,7 +13,6 @@ class StudyStreakTest {
 
     private StudySyncService service() {
         DatabaseManager database = new DatabaseManager("jdbc:sqlite:" + tempDir.resolve("streak.db"));
-        database.initializeDatabase();
         return new StudySyncService(database);
     }
 
