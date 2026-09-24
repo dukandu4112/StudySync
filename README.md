@@ -47,8 +47,7 @@ StudySync separates the user interface from reusable application logic:
 ```text
 src/
 ├── main/java/com/studysync/
-│   ├── StudySyncApplication.java
-│   ├── StudySyncDesktopApplication.java # 2.2 desktop entry point
+│   ├── StudySyncApplication.java        # JavaFX desktop entry point
 │   ├── DashboardView.java               # 2.2 dashboard composition
 │   ├── StudyProgressView.java
 │   ├── StudyStreakView.java
