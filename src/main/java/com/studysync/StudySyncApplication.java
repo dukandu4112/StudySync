@@ -15,7 +15,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
-/** JavaFX desktop entry point for StudySync 2.1. */
+/** JavaFX desktop entry point for StudySync 2.2. */
 public class StudySyncApplication extends Application {
     private StudySyncService service;
     private BorderPane root;
@@ -82,36 +82,10 @@ public class StudySyncApplication extends Application {
     }
 
     private void showDashboard() {
-        DashboardSummary summary = service.getDashboardSummary();
-        DashboardAnalytics analytics = service.getDashboardAnalytics();
-        GridPane grid = new GridPane();
-        grid.setHgap(16);
-        grid.setVgap(16);
-        grid.add(createMetricCard("Courses", summary.totalCourses()), 0, 0);
-        grid.add(createMetricCard("Pending", summary.pendingAssignments()), 1, 0);
-        grid.add(createMetricCard("Completed", summary.completedAssignments()), 2, 0);
-        grid.add(createMetricCard("Overdue", summary.overdueAssignments()), 0, 1);
-        grid.add(createMetricCard("Study Minutes", summary.totalStudyMinutes()), 1, 1);
-        grid.add(createMetricCard("Completion", String.format("%.1f%%", summary.completionPercentage())), 2, 1);
-        for (int i = 0; i < 3; i++) {
-            ColumnConstraints column = new ColumnConstraints();
-            column.setPercentWidth(33.333);
-            column.setHgrow(Priority.ALWAYS);
-            grid.getColumnConstraints().add(column);
-        }
-        String nearest = analytics.nearestDeadline() == null
-                ? "No upcoming deadline"
-                : analytics.nearestDeadline().getTitle() + " — " + analytics.nearestDeadline().getDueDate().format(DATE_TIME_FORMAT);
-        String mostStudied = analytics.mostStudiedCourse() == null
-                ? "No study sessions yet"
-                : analytics.mostStudiedCourse().getCode() + " — " + analytics.mostStudiedCourseMinutes() + " minutes";
-        VBox insights = new VBox(10,
-                styledLabel("Next 7 days: " + analytics.upcomingAssignments() + " assignment" + (analytics.upcomingAssignments() == 1 ? "" : "s"), "assignment-title"),
-                styledLabel("High-priority pending: " + analytics.highPriorityPendingAssignments(), "assignment-title"),
-                styledLabel("Nearest deadline: " + nearest, "assignment-meta"),
-                styledLabel("Most studied course: " + mostStudied, "assignment-meta"));
-        setPage(pageContainer("Dashboard", "A quick view of your courses, assignments, study progress, and planning priorities.",
-                new VBox(18, grid, card("Planning Insights", insights))));
+        setPage(pageContainer(
+                "Dashboard",
+                "A quick view of your courses, assignments, study progress, and planning priorities.",
+                DashboardView.create(service)));
     }
 
     private void showCourses() {
