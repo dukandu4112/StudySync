@@ -2,7 +2,7 @@
 
 All notable changes to StudySync are documented in this file.
 
-## [2.2.0] - Unreleased
+## [2.2.0] - 2026-09-24
 
 ### Added
 
@@ -23,7 +23,7 @@ All notable changes to StudySync are documented in this file.
 
 ### Changed
 
-- Maven development version advanced to `2.2.0-SNAPSHOT`
+- Maven project version finalized as `2.2.0`
 - GitHub Actions development-branch verification moved from `develop-2.1` to `develop-2.2`
 - `mvn javafx:run` launches the enhanced StudySync 2.2 desktop entry point
 - Dashboard now surfaces weekly study consistency, study streaks, week-over-week study trends, and ranked pending-work priorities alongside the existing academic metrics and planning insights
@@ -31,7 +31,7 @@ All notable changes to StudySync are documented in this file.
 
 ### Development Status
 
-StudySync 2.2.0 remains unreleased on `develop-2.2`. The weekly study-progress, assignment-planning, study-streak, and weekly study-trend milestones are implemented, integrated into the desktop dashboard, and CI-verified. No 2.2 tag or GitHub Release is claimed by this entry.
+StudySync 2.2.0 is prepared as a release candidate on `develop-2.2`. The weekly study-progress, assignment-planning, study-streak, and weekly study-trend milestones are implemented and integrated into the desktop dashboard. A `v2.2.0` tag or GitHub Release is not claimed until the release candidate passes CI and is promoted.
 
 ## [2.1.0] - 2026-09-14
 
