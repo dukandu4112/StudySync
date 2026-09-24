@@ -2,7 +2,7 @@
 
 StudySync is a Java 17 student productivity desktop application for organizing courses, assignments, study sessions, deadlines, workload, and academic progress. StudySync 2.2 builds on the JavaFX desktop foundation with weekly study-progress analytics, ranked assignment planning, study streak tracking, and week-over-week study trends while preserving the reusable service, domain, SQLite persistence, automated tests, and original CLI architecture.
 
-**Development version: 2.2.0-SNAPSHOT**  
+**Release candidate: 2.2.0**  
 **Latest stable release: 2.1.0**
 
 ## Features
@@ -95,11 +95,11 @@ StudySync creates `studysync.db` in the working directory and uses it for persis
 
 ## Run the Original CLI
 
-The original CLI remains available as an alternate interface. During 2.2 development, the packaged all-dependencies JAR uses the snapshot version:
+The original CLI remains available as an alternate interface. For the 2.2 release candidate, the packaged all-dependencies JAR uses the finalized version:
 
 ```bash
 mvn clean package
-java -jar target/studysync-2.2.0-SNAPSHOT-all.jar
+java -jar target/studysync-2.2.0-all.jar
 ```
 
 ## Testing
@@ -108,7 +108,7 @@ StudySync uses automated tests across the domain, persistence, service, lifecycl
 
 ## Version Status
 
-StudySync 2.2.0 is currently under development on `develop-2.2`. The weekly study-progress, assignment-planning, study-streak, and weekly study-trend milestones are implemented, integrated into the enhanced desktop dashboard, and CI-verified.
+StudySync 2.2.0 is currently a release candidate on `develop-2.2`. The weekly study-progress, assignment-planning, study-streak, and weekly study-trend milestones are implemented and integrated into the enhanced desktop dashboard. The release-candidate commit must pass CI before promotion to `main`.
 
 StudySync 2.1.0 remains the latest stable version on `main` and has an official GitHub Release tagged `v2.1.0`.
 
