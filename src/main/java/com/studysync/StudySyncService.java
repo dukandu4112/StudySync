@@ -161,6 +161,22 @@ public class StudySyncService {
     public int getTotalStudyMinutes() { return databaseManager.getAllStudySessions().stream().mapToInt(StudySession::getDurationMinutes).sum(); }
     public int getTotalStudyMinutesForCourse(int courseId) { requireCourse(courseId); return databaseManager.getStudySessionsByCourse(courseId).stream().mapToInt(StudySession::getDurationMinutes).sum(); }
 
+    public DailyStudyGoal getDailyStudyGoal(int targetMinutes) {
+        return getDailyStudyGoal(LocalDate.now(), targetMinutes);
+    }
+
+    public DailyStudyGoal getDailyStudyGoal(LocalDate date, int targetMinutes) {
+        if (date == null) throw new IllegalArgumentException("Study goal date cannot be null.");
+        if (targetMinutes <= 0) throw new IllegalArgumentException("Study goal target must be greater than zero.");
+
+        int studiedMinutes = databaseManager.getAllStudySessions().stream()
+                .filter(session -> session.getStartTime().toLocalDate().equals(date))
+                .mapToInt(StudySession::getDurationMinutes)
+                .sum();
+
+        return new DailyStudyGoal(date, targetMinutes, studiedMinutes);
+    }
+
     public StudyProgressAnalytics getStudyProgressAnalytics() { return getStudyProgressAnalytics(LocalDate.now()); }
     public StudyProgressAnalytics getStudyProgressAnalytics(LocalDate referenceDate) {
         if (referenceDate == null) throw new IllegalArgumentException("Study progress reference date cannot be null.");
