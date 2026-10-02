@@ -31,7 +31,7 @@ class StudyPlanSummaryTest {
     }
 
     @Test
-    void summaryIncludesMinutesAlreadyStudied() {
+    void summaryIncludesMinutesAlreadyStudiedAndUncoveredTime() {
         StudySyncService service = service("studied.db");
         Course course = service.createCourse("Linear Algebra", "MATH 2140");
         LocalDateTime now = LocalDateTime.of(2026, 10, 2, 12, 0);
@@ -41,8 +41,10 @@ class StudyPlanSummaryTest {
 
         assertEquals(120, summary.dailyTargetMinutes());
         assertEquals(45, summary.studiedTodayMinutes());
-        assertEquals(75, summary.plannedMinutes());
-        assertEquals(0, summary.remainingAfterPlanMinutes());
+        assertEquals(30, summary.plannedMinutes());
+        assertEquals(1, summary.blockCount());
+        assertEquals(45, summary.remainingAfterPlanMinutes());
+        assertFalse(summary.coversRemainingDailyTarget());
     }
 
     @Test
