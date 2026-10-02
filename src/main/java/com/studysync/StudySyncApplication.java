@@ -15,7 +15,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
-/** JavaFX desktop entry point for StudySync 2.2. */
+/** JavaFX desktop entry point for StudySync 2.3. */
 public class StudySyncApplication extends Application {
     private StudySyncService service;
     private BorderPane root;
@@ -85,7 +85,7 @@ public class StudySyncApplication extends Application {
         setPage(pageContainer(
                 "Dashboard",
                 "A quick view of your courses, assignments, study progress, and planning priorities.",
-                DashboardView.create(service)));
+                DashboardView.create(service, this::showDashboard)));
     }
 
     private void showCourses() {
@@ -359,20 +359,14 @@ public class StudySyncApplication extends Application {
         boolean[] saved = {false};
         Node okButton = dialog.getDialogPane().lookupButton(ButtonType.OK);
         okButton.addEventFilter(ActionEvent.ACTION, event -> {
-            if (title.getText().isBlank()) {
-                showError("Missing assignment title", "Enter a title before saving the assignment.");
-                event.consume();
-                return;
-            }
-            if (course.getValue() == null || priority.getValue() == null) {
-                showError("Missing assignment information", "Choose a course and priority before saving the assignment.");
+            if (title.getText().isBlank() || course.getValue() == null) {
+                showError("Missing assignment information", "Select a course and enter an assignment title.");
                 event.consume();
                 return;
             }
             try {
                 LocalDateTime due = UiSupport.parseDateTime(date.getValue(), time.getText());
-                service.updateAssignment(assignment.getId(), course.getValue().getId(), title.getText().trim(),
-                        description.getText().trim(), due, priority.getValue());
+                service.updateAssignment(assignment.getId(), course.getValue().getId(), title.getText().trim(), description.getText().trim(), due, priority.getValue());
                 saved[0] = true;
             } catch (RuntimeException exception) {
                 showError("Could not edit assignment", safeMessage(exception));
@@ -386,7 +380,7 @@ public class StudySyncApplication extends Application {
     private void showStudySessions() {
         List<Course> courses = service.getCourses();
         if (courses.isEmpty()) {
-            setPage(pageContainer("Study Sessions", "Record and review focused study time.",
+            setPage(pageContainer("Study Sessions", "Track focused study time by course.",
                     card("Study Sessions", styledLabel("Add a course before recording study sessions.", "placeholder-message"))));
             return;
         }
@@ -395,82 +389,88 @@ public class StudySyncApplication extends Application {
         course.getSelectionModel().selectFirst();
         course.setMaxWidth(Double.MAX_VALUE);
         DatePicker date = new DatePicker(LocalDate.now());
-        TextField time = new TextField(LocalTime.now().withSecond(0).withNano(0).toString());
-        TextField duration = new TextField();
+        TextField time = new TextField(LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm")));
+        TextField minutes = new TextField("30");
         TextField notes = new TextField();
-        duration.setPromptText("Minutes");
-        notes.setPromptText("What did you study? (optional)");
-        Button record = primary("Record Session");
+        notes.setPromptText("What did you work on?");
+        Button add = primary("Record Session");
         GridPane form = formGrid();
-        String[] labels = {"Course", "Date", "Start Time", "Duration", "Notes"};
-        Node[] inputs = {course, date, time, duration, notes};
+        String[] labels = {"Course", "Date", "Start Time", "Minutes", "Notes"};
+        Node[] inputs = {course, date, time, minutes, notes};
         for (int i = 0; i < labels.length; i++) {
             form.add(new Label(labels[i]), 0, i);
             form.add(inputs[i], 1, i);
         }
-        form.add(record, 1, 5);
+        form.add(add, 1, 5);
         TextField search = new TextField();
-        search.setPromptText("Search study notes");
-        ComboBox<String> courseFilter = new ComboBox<>();
-        courseFilter.getItems().add("All Courses");
-        for (Course item : courses) courseFilter.getItems().add(item.getCode());
-        courseFilter.setValue("All Courses");
+        search.setPromptText("Search notes or course");
+        ComboBox<String> filter = new ComboBox<>();
+        filter.getItems().add("All Courses");
+        courses.stream().map(Course::getCode).forEach(filter.getItems()::add);
+        filter.setValue("All Courses");
         Button clear = new Button("Clear");
         clear.getStyleClass().add("secondary-button");
-        HBox tools = new HBox(10, search, courseFilter, clear);
+        HBox tools = new HBox(10, search, filter, clear);
         HBox.setHgrow(search, Priority.ALWAYS);
         VBox list = new VBox(10);
-        Runnable refresh = () -> refreshStudySessionList(list, search.getText(), courseFilter.getValue());
+        Runnable refresh = () -> refreshStudySessionList(list, search.getText(), filter.getValue());
         refresh.run();
         search.textProperty().addListener((observable, oldValue, newValue) -> refresh.run());
-        courseFilter.setOnAction(event -> refresh.run());
+        filter.setOnAction(event -> refresh.run());
         clear.setOnAction(event -> {
             search.clear();
-            courseFilter.setValue("All Courses");
+            filter.setValue("All Courses");
         });
-        record.setOnAction(event -> {
+        add.setOnAction(event -> {
             try {
-                int minutes = UiSupport.parsePositiveMinutes(duration.getText());
+                int duration = Integer.parseInt(minutes.getText().trim());
                 LocalDateTime start = UiSupport.parseDateTime(date.getValue(), time.getText());
-                service.recordStudySession(course.getValue().getId(), start, minutes, notes.getText().trim());
-                showStudySessions();
+                service.recordStudySession(course.getValue().getId(), start, duration, notes.getText().trim());
+                notes.clear();
+                refresh.run();
             } catch (RuntimeException exception) {
-                showError("Could not record session", safeMessage(exception));
+                showError("Could not record study session", safeMessage(exception));
             }
         });
-        setPage(pageContainer("Study Sessions", "Record, edit, search, and review focused study time.",
-                new VBox(18, card("Record a Study Session", form), card("Find Study Sessions", tools),
-                        card("Study History", new VBox(10, styledLabel("Total study time: " + service.getTotalStudyMinutes() + " minutes", "study-total"), list)))));
+        setPage(pageContainer("Study Sessions", "Track focused study time by course.",
+                new VBox(18, card("Record Study Time", form), card("Find Sessions", tools), card("Study History", list))));
     }
 
-    private void refreshStudySessionList(VBox list, String query, String courseCode) {
-        Integer courseId = null;
-        if (courseCode != null && !"All Courses".equals(courseCode)) {
-            Course selected = service.getCourses().stream().filter(course -> course.getCode().equals(courseCode)).findFirst().orElse(null);
-            if (selected != null) courseId = selected.getId();
-        }
-        List<StudySession> sessions = UiSupport.filterStudySessions(service.getStudySessions(), courseId, query);
+    private void refreshStudySessionList(VBox list, String query, String courseFilter) {
+        List<StudySession> sessions = UiSupport.filterStudySessions(service.getStudySessions(), service.getCourses(), query, courseFilter);
         list.getChildren().clear();
         if (sessions.isEmpty()) {
             addEmpty(list, "No study sessions match the current view.");
             return;
         }
-        List<Course> courses = service.getCourses();
         for (StudySession session : sessions) {
-            Course course = courses.stream().filter(item -> item.getId() == session.getCourseId()).findFirst().orElse(null);
-            VBox details = new VBox(4,
-                    styledLabel((course == null ? "Course #" + session.getCourseId() : course.getCode()) + " • " + session.getDurationMinutes() + " minutes", "assignment-title"),
-                    styledLabel(session.getStartTime().format(DATE_TIME_FORMAT), "assignment-meta"),
-                    styledLabel(session.getNotes().isBlank() ? "No notes" : session.getNotes(), "course-name"));
+            Course course = findCourse(session.getCourseId());
+            String courseCode = course == null ? "Course #" + session.getCourseId() : course.getCode();
+            Label title = styledLabel(courseCode + "  •  " + session.getDurationMinutes() + " minutes", "assignment-title");
+            Label meta = styledLabel(session.getStartTime().format(DATE_TIME_FORMAT), "assignment-meta");
+            Label notes = styledLabel(session.getNotes().isBlank() ? "No notes" : session.getNotes(), "course-name");
+            notes.setWrapText(true);
+            VBox details = new VBox(4, title, meta, notes);
             HBox.setHgrow(details, Priority.ALWAYS);
             Button edit = new Button("Edit");
             Button delete = new Button("Delete");
             edit.getStyleClass().add("secondary-button");
             delete.getStyleClass().add("danger-button");
             edit.setOnAction(event -> {
-                if (editStudySession(session)) showStudySessions();
+                if (editStudySession(session)) refreshStudySessionList(list, query, courseFilter);
             });
-            delete.setOnAction(event -> deleteStudySession(session));
+            delete.setOnAction(event -> {
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Delete this " + session.getDurationMinutes() + " minute study session?", ButtonType.OK, ButtonType.CANCEL);
+                confirm.setHeaderText("Delete study session");
+                confirm.showAndWait().filter(ButtonType.OK::equals).ifPresent(result -> {
+                    try {
+                        service.deleteStudySession(session.getId());
+                        refreshStudySessionList(list, query, courseFilter);
+                    } catch (RuntimeException exception) {
+                        showError("Could not delete study session", safeMessage(exception));
+                    }
+                });
+            });
             HBox row = new HBox(10, details, edit, delete);
             row.setAlignment(Pos.CENTER_LEFT);
             row.setPadding(new Insets(14));
@@ -487,14 +487,13 @@ public class StudySyncApplication extends Application {
         ComboBox<Course> course = new ComboBox<>();
         course.getItems().addAll(service.getCourses());
         course.getItems().stream().filter(item -> item.getId() == session.getCourseId()).findFirst().ifPresent(course::setValue);
-        course.setMaxWidth(Double.MAX_VALUE);
         DatePicker date = new DatePicker(session.getStartTime().toLocalDate());
         TextField time = new TextField(session.getStartTime().toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")));
-        TextField duration = new TextField(String.valueOf(session.getDurationMinutes()));
+        TextField minutes = new TextField(String.valueOf(session.getDurationMinutes()));
         TextField notes = new TextField(session.getNotes());
         GridPane form = formGrid();
-        String[] labels = {"Course", "Date", "Start Time", "Duration", "Notes"};
-        Node[] inputs = {course, date, time, duration, notes};
+        String[] labels = {"Course", "Date", "Start Time", "Minutes", "Notes"};
+        Node[] inputs = {course, date, time, minutes, notes};
         for (int i = 0; i < labels.length; i++) {
             form.add(new Label(labels[i]), 0, i);
             form.add(inputs[i], 1, i);
@@ -503,15 +502,10 @@ public class StudySyncApplication extends Application {
         boolean[] saved = {false};
         Node okButton = dialog.getDialogPane().lookupButton(ButtonType.OK);
         okButton.addEventFilter(ActionEvent.ACTION, event -> {
-            if (course.getValue() == null) {
-                showError("Missing course", "Choose a course before saving the study session.");
-                event.consume();
-                return;
-            }
             try {
-                int minutes = UiSupport.parsePositiveMinutes(duration.getText());
+                int duration = Integer.parseInt(minutes.getText().trim());
                 LocalDateTime start = UiSupport.parseDateTime(date.getValue(), time.getText());
-                service.updateStudySession(session.getId(), course.getValue().getId(), start, minutes, notes.getText().trim());
+                service.updateStudySession(session.getId(), course.getValue().getId(), start, duration, notes.getText().trim());
                 saved[0] = true;
             } catch (RuntimeException exception) {
                 showError("Could not edit study session", safeMessage(exception));
@@ -522,106 +516,62 @@ public class StudySyncApplication extends Application {
         return saved[0];
     }
 
-    private void deleteStudySession(StudySession session) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Delete this " + session.getDurationMinutes() + "-minute study session? This will update your study-time totals.",
-                ButtonType.OK, ButtonType.CANCEL);
-        confirm.setHeaderText("Delete study session?");
-        confirm.showAndWait().filter(ButtonType.OK::equals).ifPresent(result -> {
-            try {
-                service.deleteStudySession(session.getId());
-                showStudySessions();
-            } catch (RuntimeException exception) {
-                showError("Could not delete study session", safeMessage(exception));
-            }
-        });
-    }
-
     private void showWorkload() {
-        ComboBox<Integer> window = new ComboBox<>();
-        window.getItems().addAll(3, 7, 14, 30);
-        window.setValue(7);
-        Button refresh = primary("Refresh Plan");
-        HBox controls = new HBox(10, new Label("Plan next"), window, new Label("days"), refresh);
-        controls.setAlignment(Pos.CENTER_LEFT);
-        VBox overdueList = new VBox(10);
-        VBox upcomingList = new VBox(10);
-        Label overdueSummary = styledLabel("", "study-total");
-        Label upcomingSummary = styledLabel("", "study-total");
-        Runnable load = () -> refreshWorkload(overdueList, overdueSummary, upcomingList, upcomingSummary, window.getValue());
-        load.run();
-        refresh.setOnAction(event -> load.run());
-        window.setOnAction(event -> load.run());
-        setPage(pageContainer("Workload", "Plan upcoming assignments and catch overdue work before it falls further behind.",
-                new VBox(18, card("Planning Window", controls), card("Overdue Work", new VBox(12, overdueSummary, overdueList)),
-                        card("Upcoming Workload", new VBox(12, upcomingSummary, upcomingList)))));
-    }
-
-    private void refreshWorkload(VBox overdueList, Label overdueSummary, VBox upcomingList, Label upcomingSummary, int days) {
-        try {
-            List<Assignment> overdue = service.getOverdueAssignments();
-            overdueList.getChildren().clear();
-            overdueSummary.setText(overdue.size() + " overdue assignment" + (overdue.size() == 1 ? "" : "s"));
-            if (overdue.isEmpty()) addEmpty(overdueList, "No overdue assignments. Nice work staying current.");
-            else for (Assignment assignment : overdue) overdueList.getChildren().add(workloadRow(assignment, "Overdue"));
-            List<Assignment> upcoming = service.getUpcomingAssignments(days);
-            upcomingList.getChildren().clear();
-            upcomingSummary.setText(upcoming.size() + " upcoming assignment" + (upcoming.size() == 1 ? "" : "s") + " in the next " + days + " days");
-            if (upcoming.isEmpty()) addEmpty(upcomingList, "Nothing is due in this planning window.");
-            else {
-                for (Assignment assignment : upcoming) {
-                    long remaining = java.time.Duration.between(LocalDateTime.now(), assignment.getDueDate()).toDays();
-                    upcomingList.getChildren().add(workloadRow(assignment, remaining <= 1 ? "Due very soon" : remaining <= 3 ? "Due soon" : "Upcoming"));
-                }
+        List<AssignmentPlanItem> plan = service.getAssignmentPlan();
+        VBox content = new VBox(12);
+        if (plan.isEmpty()) {
+            addEmpty(content, "No pending assignments. Your workload is clear.");
+        } else {
+            for (AssignmentPlanItem item : plan) {
+                Assignment assignment = item.assignment();
+                Course course = findCourse(assignment.getCourseId());
+                String courseCode = course == null ? "Course #" + assignment.getCourseId() : course.getCode();
+                String timing = item.minutesUntilDue() < 0 ? Math.abs(item.minutesUntilDue()) + " min overdue" : item.minutesUntilDue() + " min remaining";
+                VBox details = new VBox(4,
+                        styledLabel(assignment.getTitle(), "assignment-title"),
+                        styledLabel(courseCode + "  •  " + item.urgency() + "  •  " + assignment.getPriority(), "assignment-meta"),
+                        styledLabel("Due " + assignment.getDueDate().format(DATE_TIME_FORMAT) + "  •  " + timing, "course-name"));
+                details.setPadding(new Insets(14));
+                details.getStyleClass().add("course-row");
+                content.getChildren().add(details);
             }
-        } catch (RuntimeException exception) {
-            showError("Could not load workload", safeMessage(exception));
         }
+        setPage(pageContainer("Workload", "See pending work ordered by urgency, priority, and deadline.", card("Priority Queue", content)));
     }
 
-    private VBox workloadRow(Assignment assignment, String urgencyText) {
-        Course course = findCourse(assignment.getCourseId());
-        String code = course == null ? "Course #" + assignment.getCourseId() : course.getCode();
-        Label title = styledLabel(assignment.getTitle(), "assignment-title");
-        Label meta = styledLabel(code + " • " + assignment.getPriority() + " priority • Due " + assignment.getDueDate().format(DATE_TIME_FORMAT), "assignment-meta");
-        Label urgency = styledLabel(urgencyText, "workload-urgency");
-        return styledBox(new VBox(4, title, meta, urgency), "course-row");
-    }
-
-    private Course findCourse(int id) {
-        return service.getCourses().stream().filter(course -> course.getId() == id).findFirst().orElse(null);
+    private Course findCourse(int courseId) {
+        return service.getCourses().stream().filter(course -> course.getId() == courseId).findFirst().orElse(null);
     }
 
     private VBox pageContainer(String title, String subtitle, Node content) {
-        VBox page = new VBox(18, styledLabel(title, "page-title"), styledLabel(subtitle, "page-subtitle"), content);
-        page.setPadding(new Insets(28));
-        return page;
+        VBox body = new VBox(18, styledLabel(title, "page-title"), styledLabel(subtitle, "page-subtitle"), content);
+        body.setPadding(new Insets(28));
+        ScrollPane scrollPane = new ScrollPane(body);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.getStyleClass().add("page-scroll");
+        VBox wrapper = new VBox(scrollPane);
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+        return wrapper;
     }
 
     private VBox card(String title, Node content) {
-        VBox box = new VBox(12, styledLabel(title, "section-title"), content);
-        box.setPadding(new Insets(18));
-        box.getStyleClass().add("card");
-        return box;
+        VBox card = new VBox(12, styledLabel(title, "section-title"), content);
+        card.setPadding(new Insets(18));
+        card.getStyleClass().add("card");
+        return card;
     }
 
     private GridPane formGrid() {
         GridPane grid = new GridPane();
         grid.setHgap(12);
         grid.setVgap(12);
-        ColumnConstraints first = new ColumnConstraints();
-        first.setMinWidth(110);
-        ColumnConstraints second = new ColumnConstraints();
-        second.setHgrow(Priority.ALWAYS);
-        grid.getColumnConstraints().addAll(first, second);
+        ColumnConstraints labelColumn = new ColumnConstraints();
+        labelColumn.setMinWidth(110);
+        ColumnConstraints inputColumn = new ColumnConstraints();
+        inputColumn.setHgrow(Priority.ALWAYS);
+        grid.getColumnConstraints().addAll(labelColumn, inputColumn);
         return grid;
-    }
-
-    private VBox createMetricCard(String title, Object value) {
-        VBox box = new VBox(8, styledLabel(title, "metric-title"), styledLabel(String.valueOf(value), "metric-value"));
-        box.setPadding(new Insets(18));
-        box.getStyleClass().add("metric-card");
-        return box;
     }
 
     private Button primary(String text) {
@@ -630,38 +580,32 @@ public class StudySyncApplication extends Application {
         return button;
     }
 
-    private Label styledLabel(String text, String style) {
+    private Label styledLabel(String text, String styleClass) {
         Label label = new Label(text);
-        label.getStyleClass().add(style);
+        label.getStyleClass().add(styleClass);
         return label;
     }
 
-    private VBox styledBox(VBox box, String style) {
-        box.setPadding(new Insets(14));
-        box.getStyleClass().add(style);
-        return box;
-    }
-
-    private void addEmpty(VBox box, String text) {
-        box.getChildren().add(styledLabel(text, "placeholder-message"));
+    private void addEmpty(VBox target, String message) {
+        target.getChildren().add(styledLabel(message, "placeholder-message"));
     }
 
     private void setPage(Node node) {
-        ScrollPane scroll = new ScrollPane(node);
-        scroll.setFitToWidth(true);
-        scroll.getStyleClass().add("page-scroll");
-        root.setCenter(scroll);
+        root.setCenter(node);
     }
 
     private void showError(String header, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
-        alert.setTitle("StudySync");
         alert.setHeaderText(header);
         alert.showAndWait();
     }
 
-    private String safeMessage(Throwable error) {
-        String message = error.getMessage();
+    private String safeMessage(RuntimeException exception) {
+        String message = exception.getMessage();
         return message == null || message.isBlank() ? "An unexpected error occurred." : message;
+    }
+
+    public static void main(String[] args) {
+        launch(args);
     }
 }
