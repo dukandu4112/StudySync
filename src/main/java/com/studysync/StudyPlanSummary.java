@@ -18,4 +18,14 @@ public record StudyPlanSummary(
     public boolean coversRemainingDailyTarget() {
         return remainingAfterPlanMinutes == 0;
     }
+
+    /** Minutes accounted for today by completed study plus the generated plan. */
+    public int accountedMinutes() {
+        return Math.min(dailyTargetMinutes, studiedTodayMinutes + plannedMinutes);
+    }
+
+    /** Percentage of today's study target accounted for by completed study and planned blocks. */
+    public double coveragePercentage() {
+        return accountedMinutes() * 100.0 / dailyTargetMinutes;
+    }
 }
