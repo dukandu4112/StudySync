@@ -7,9 +7,10 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-/** Builds the StudySync 2.2 dashboard from service-backed analytics and planning data. */
+/** Builds the StudySync 2.3 dashboard from service-backed analytics and planning data. */
 public final class DashboardView {
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("MMM d, yyyy h:mm a");
+    private static final int DEFAULT_DAILY_STUDY_GOAL_MINUTES = 120;
 
     private DashboardView() {}
 
@@ -18,6 +19,7 @@ public final class DashboardView {
 
         DashboardSummary summary = service.getDashboardSummary();
         DashboardAnalytics analytics = service.getDashboardAnalytics();
+        DailyStudyGoal dailyGoal = service.getDailyStudyGoal(DEFAULT_DAILY_STUDY_GOAL_MINUTES);
         StudyProgressAnalytics progress = service.getStudyProgressAnalytics();
         StudyStreak streak = service.getStudyStreak();
         StudyTrend trend = service.getStudyTrend();
@@ -52,6 +54,7 @@ public final class DashboardView {
 
         return new VBox(18,
                 metrics,
+                card("Today's Study Goal", DailyStudyGoalView.create(dailyGoal)),
                 card("This Week", StudyProgressView.create(progress)),
                 card("Weekly Trend", StudyTrendView.create(trend)),
                 card("Study Streak", StudyStreakView.create(streak)),
