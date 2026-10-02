@@ -53,6 +53,7 @@ public final class DashboardView {
         return new VBox(18,
                 metrics,
                 card("Today's Study Goal", DailyStudyGoalView.create(service)),
+                card("Course Study Goals", CourseStudyGoalsView.create(service)),
                 card("This Week", StudyProgressView.create(progress)),
                 card("Weekly Trend", StudyTrendView.create(trend)),
                 card("Study Streak", StudyStreakView.create(streak)),
