@@ -27,6 +27,8 @@ class StudyPlanSummaryTest {
         assertEquals(90, summary.dailyTargetMinutes());
         assertEquals(0, summary.studiedTodayMinutes());
         assertEquals(0, summary.remainingAfterPlanMinutes());
+        assertEquals(90, summary.accountedMinutes());
+        assertEquals(100.0, summary.coveragePercentage(), 0.001);
         assertTrue(summary.coversRemainingDailyTarget());
     }
 
@@ -44,21 +46,25 @@ class StudyPlanSummaryTest {
         assertEquals(30, summary.plannedMinutes());
         assertEquals(1, summary.blockCount());
         assertEquals(45, summary.remainingAfterPlanMinutes());
+        assertEquals(75, summary.accountedMinutes());
+        assertEquals(62.5, summary.coveragePercentage(), 0.001);
         assertFalse(summary.coversRemainingDailyTarget());
     }
 
     @Test
-    void completedDailyGoalNeedsNoPlan() {
+    void completedDailyGoalNeedsNoPlanAndCapsCoverageAtOneHundredPercent() {
         StudySyncService service = service("complete.db");
         Course course = service.createCourse("Architecture", "CSCI 2302");
         LocalDateTime now = LocalDateTime.of(2026, 10, 2, 12, 0);
-        service.recordStudySession(course.getId(), now.minusMinutes(30), 120, "Done");
+        service.recordStudySession(course.getId(), now.minusMinutes(30), 150, "Done plus extra study");
 
         StudyPlanSummary summary = service.getStudyPlanSummary(now);
 
         assertEquals(0, summary.plannedMinutes());
         assertEquals(0, summary.blockCount());
         assertEquals(0, summary.remainingAfterPlanMinutes());
+        assertEquals(120, summary.accountedMinutes());
+        assertEquals(100.0, summary.coveragePercentage(), 0.001);
         assertTrue(summary.coversRemainingDailyTarget());
     }
 
