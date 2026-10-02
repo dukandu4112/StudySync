@@ -28,4 +28,17 @@ public record StudyPlanSummary(
     public double coveragePercentage() {
         return accountedMinutes() * 100.0 / dailyTargetMinutes;
     }
+
+    /** Minutes still needed from actual study, regardless of what is currently planned. */
+    public int remainingStudyMinutes() {
+        return Math.max(0, dailyTargetMinutes - studiedTodayMinutes);
+    }
+
+    /** Human-readable state used by the dashboard to explain today's workload. */
+    public String workloadStatus() {
+        if (studiedTodayMinutes >= dailyTargetMinutes) return "Goal complete";
+        if (plannedMinutes == 0) return "Needs planning";
+        if (coversRemainingDailyTarget()) return "Fully planned";
+        return "Partially planned";
+    }
 }
