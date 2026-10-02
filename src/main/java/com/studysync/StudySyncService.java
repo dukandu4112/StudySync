@@ -13,300 +13,37 @@ import java.util.stream.Collectors;
 
 /** Application service that coordinates StudySync's core productivity features. */
 public class StudySyncService {
+    private static final String DAILY_STUDY_TARGET_KEY = "daily_study_target_minutes";
+    private static final int DEFAULT_DAILY_STUDY_TARGET = 120;
     private final DatabaseManager databaseManager;
 
     public StudySyncService(DatabaseManager databaseManager) {
-        if (databaseManager == null) {
-            throw new IllegalArgumentException("Database manager cannot be null.");
-        }
+        if (databaseManager == null) throw new IllegalArgumentException("Database manager cannot be null.");
         this.databaseManager = databaseManager;
     }
 
-    public Course createCourse(String name, String code) {
-        return databaseManager.addCourse(name, code);
-    }
+    public Course createCourse(String name,String code){return databaseManager.addCourse(name,code);} public List<Course> getCourses(){return databaseManager.getAllCourses();}
+    public boolean updateCourse(int id,String name,String code){requireCourse(id);Course c=new Course(id,name,code);return databaseManager.updateCourse(id,c.getName(),c.getCode());} public boolean deleteCourse(int id){requireCourse(id);return databaseManager.deleteCourse(id);}
+    public Assignment createAssignment(int courseId,String title,String description,LocalDateTime dueDate,Assignment.Priority priority){requireCourse(courseId);return databaseManager.addAssignment(courseId,title,description,dueDate,priority);} public List<Assignment> getAssignments(){return databaseManager.getAllAssignments();}
+    public List<Assignment> getAssignmentsForCourse(int id){requireCourse(id);return databaseManager.getAssignmentsByCourse(id);} public List<Assignment> getPendingAssignments(){return databaseManager.getAllAssignments().stream().filter(a->!a.isCompleted()).sorted(Comparator.comparing(Assignment::getDueDate)).toList();} public List<Assignment> getCompletedAssignments(){return databaseManager.getAllAssignments().stream().filter(Assignment::isCompleted).sorted(Comparator.comparing(Assignment::getDueDate)).toList();} public List<Assignment> getOverdueAssignments(){return databaseManager.getAllAssignments().stream().filter(Assignment::isOverdue).sorted(Comparator.comparing(Assignment::getDueDate)).toList();}
+    public List<Assignment> getUpcomingAssignments(int days){if(days<=0)throw new IllegalArgumentException("Upcoming assignment window must be greater than zero days.");LocalDateTime now=LocalDateTime.now(),deadline=now.plusDays(days);return databaseManager.getAllAssignments().stream().filter(a->!a.isCompleted()).filter(a->!a.getDueDate().isBefore(now)).filter(a->!a.getDueDate().isAfter(deadline)).sorted(Comparator.comparing(Assignment::getDueDate)).toList();}
+    public List<Assignment> getAssignmentsByPriority(Assignment.Priority priority){if(priority==null)throw new IllegalArgumentException("Assignment priority cannot be null.");return databaseManager.getAllAssignments().stream().filter(a->a.getPriority()==priority).sorted(Comparator.comparing(Assignment::getDueDate)).toList();}
+    public List<Assignment> searchAssignments(String query){if(query==null||query.isBlank())throw new IllegalArgumentException("Search query cannot be empty.");String q=query.trim().toLowerCase(Locale.ROOT);return databaseManager.getAllAssignments().stream().filter(a->a.getTitle().toLowerCase(Locale.ROOT).contains(q)||a.getDescription().toLowerCase(Locale.ROOT).contains(q)).sorted(Comparator.comparing(Assignment::getDueDate)).toList();}
+    public List<AssignmentPlanItem> getAssignmentPlan(){return getAssignmentPlan(LocalDateTime.now());} public List<AssignmentPlanItem> getAssignmentPlan(LocalDateTime t){if(t==null)throw new IllegalArgumentException("Assignment plan reference time cannot be null.");return databaseManager.getAllAssignments().stream().filter(a->!a.isCompleted()).map(a->new AssignmentPlanItem(a,classifyUrgency(a,t),Duration.between(t,a.getDueDate()).toMinutes())).sorted(Comparator.comparingInt((AssignmentPlanItem i)->urgencyRank(i.urgency())).thenComparingInt(i->priorityRank(i.assignment().getPriority())).thenComparing(i->i.assignment().getDueDate()).thenComparingInt(i->i.assignment().getId())).toList();}
+    private AssignmentPlanItem.Urgency classifyUrgency(Assignment a,LocalDateTime t){if(a.getDueDate().isBefore(t))return AssignmentPlanItem.Urgency.OVERDUE;if(a.getDueDate().toLocalDate().equals(t.toLocalDate()))return AssignmentPlanItem.Urgency.DUE_TODAY;if(!a.getDueDate().isAfter(t.plusHours(48)))return AssignmentPlanItem.Urgency.DUE_SOON;return AssignmentPlanItem.Urgency.UPCOMING;} private int urgencyRank(AssignmentPlanItem.Urgency u){return switch(u){case OVERDUE->0;case DUE_TODAY->1;case DUE_SOON->2;case UPCOMING->3;};} private int priorityRank(Assignment.Priority p){return switch(p){case HIGH->0;case MEDIUM->1;case LOW->2;};}
+    public boolean updateAssignment(int id,int courseId,String title,String description,LocalDateTime dueDate,Assignment.Priority priority){requireAssignment(id);requireCourse(courseId);Assignment a=new Assignment(courseId,title,description,dueDate,priority);return databaseManager.updateAssignment(id,a.getCourseId(),a.getTitle(),a.getDescription(),a.getDueDate(),a.getPriority());} public boolean deleteAssignment(int id){requireAssignment(id);return databaseManager.deleteAssignment(id);} public boolean completeAssignment(int id){requireAssignment(id);return databaseManager.setAssignmentCompleted(id,true);} public boolean reopenAssignment(int id){requireAssignment(id);return databaseManager.setAssignmentCompleted(id,false);}
+    public StudySession recordStudySession(int courseId,LocalDateTime start,int minutes,String notes){requireCourse(courseId);return databaseManager.addStudySession(courseId,start,minutes,notes);} public List<StudySession> getStudySessions(){return databaseManager.getAllStudySessions();} public List<StudySession> getStudySessionsForCourse(int id){requireCourse(id);return databaseManager.getStudySessionsByCourse(id);} public boolean updateStudySession(int id,int courseId,LocalDateTime start,int minutes,String notes){requireStudySession(id);requireCourse(courseId);StudySession s=new StudySession(courseId,start,minutes,notes);return databaseManager.updateStudySession(id,s.getCourseId(),s.getStartTime(),s.getDurationMinutes(),s.getNotes());} public boolean deleteStudySession(int id){requireStudySession(id);return databaseManager.deleteStudySession(id);} public int getTotalStudyMinutes(){return databaseManager.getAllStudySessions().stream().mapToInt(StudySession::getDurationMinutes).sum();} public int getTotalStudyMinutesForCourse(int id){requireCourse(id);return databaseManager.getStudySessionsByCourse(id).stream().mapToInt(StudySession::getDurationMinutes).sum();}
 
-    public List<Course> getCourses() {
-        return databaseManager.getAllCourses();
-    }
+    public int getDailyStudyTargetMinutes(){String saved=databaseManager.getSetting(DAILY_STUDY_TARGET_KEY);if(saved==null)return DEFAULT_DAILY_STUDY_TARGET;try{int value=Integer.parseInt(saved);return value>0?value:DEFAULT_DAILY_STUDY_TARGET;}catch(NumberFormatException e){return DEFAULT_DAILY_STUDY_TARGET;}}
+    public void setDailyStudyTargetMinutes(int targetMinutes){if(targetMinutes<=0)throw new IllegalArgumentException("Study goal target must be greater than zero.");databaseManager.setSetting(DAILY_STUDY_TARGET_KEY,Integer.toString(targetMinutes));}
+    public DailyStudyGoal getDailyStudyGoal(){return getDailyStudyGoal(LocalDate.now(),getDailyStudyTargetMinutes());}
+    public DailyStudyGoal getDailyStudyGoal(int targetMinutes){return getDailyStudyGoal(LocalDate.now(),targetMinutes);} public DailyStudyGoal getDailyStudyGoal(LocalDate date,int targetMinutes){if(date==null)throw new IllegalArgumentException("Study goal date cannot be null.");if(targetMinutes<=0)throw new IllegalArgumentException("Study goal target must be greater than zero.");int studied=databaseManager.getAllStudySessions().stream().filter(s->s.getStartTime().toLocalDate().equals(date)).mapToInt(StudySession::getDurationMinutes).sum();return new DailyStudyGoal(date,targetMinutes,studied);}
 
-    public boolean updateCourse(int courseId, String name, String code) {
-        requireCourse(courseId);
-        Course course = new Course(courseId, name, code);
-        return databaseManager.updateCourse(courseId, course.getName(), course.getCode());
-    }
-
-    public boolean deleteCourse(int courseId) {
-        requireCourse(courseId);
-        return databaseManager.deleteCourse(courseId);
-    }
-
-    public Assignment createAssignment(int courseId, String title, String description, LocalDateTime dueDate, Assignment.Priority priority) {
-        requireCourse(courseId);
-        return databaseManager.addAssignment(courseId, title, description, dueDate, priority);
-    }
-
-    public List<Assignment> getAssignments() { return databaseManager.getAllAssignments(); }
-
-    public List<Assignment> getAssignmentsForCourse(int courseId) {
-        requireCourse(courseId);
-        return databaseManager.getAssignmentsByCourse(courseId);
-    }
-
-    public List<Assignment> getPendingAssignments() {
-        return databaseManager.getAllAssignments().stream().filter(a -> !a.isCompleted())
-                .sorted(Comparator.comparing(Assignment::getDueDate)).toList();
-    }
-
-    public List<Assignment> getCompletedAssignments() {
-        return databaseManager.getAllAssignments().stream().filter(Assignment::isCompleted)
-                .sorted(Comparator.comparing(Assignment::getDueDate)).toList();
-    }
-
-    public List<Assignment> getOverdueAssignments() {
-        return databaseManager.getAllAssignments().stream().filter(Assignment::isOverdue)
-                .sorted(Comparator.comparing(Assignment::getDueDate)).toList();
-    }
-
-    public List<Assignment> getUpcomingAssignments(int days) {
-        if (days <= 0) throw new IllegalArgumentException("Upcoming assignment window must be greater than zero days.");
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime deadline = now.plusDays(days);
-        return databaseManager.getAllAssignments().stream()
-                .filter(a -> !a.isCompleted())
-                .filter(a -> !a.getDueDate().isBefore(now))
-                .filter(a -> !a.getDueDate().isAfter(deadline))
-                .sorted(Comparator.comparing(Assignment::getDueDate)).toList();
-    }
-
-    public List<Assignment> getAssignmentsByPriority(Assignment.Priority priority) {
-        if (priority == null) throw new IllegalArgumentException("Assignment priority cannot be null.");
-        return databaseManager.getAllAssignments().stream().filter(a -> a.getPriority() == priority)
-                .sorted(Comparator.comparing(Assignment::getDueDate)).toList();
-    }
-
-    public List<Assignment> searchAssignments(String query) {
-        if (query == null || query.isBlank()) throw new IllegalArgumentException("Search query cannot be empty.");
-        String normalizedQuery = query.trim().toLowerCase(Locale.ROOT);
-        return databaseManager.getAllAssignments().stream()
-                .filter(a -> a.getTitle().toLowerCase(Locale.ROOT).contains(normalizedQuery)
-                        || a.getDescription().toLowerCase(Locale.ROOT).contains(normalizedQuery))
-                .sorted(Comparator.comparing(Assignment::getDueDate)).toList();
-    }
-
-    public List<AssignmentPlanItem> getAssignmentPlan() {
-        return getAssignmentPlan(LocalDateTime.now());
-    }
-
-    public List<AssignmentPlanItem> getAssignmentPlan(LocalDateTime referenceTime) {
-        if (referenceTime == null) throw new IllegalArgumentException("Assignment plan reference time cannot be null.");
-        return databaseManager.getAllAssignments().stream()
-                .filter(a -> !a.isCompleted())
-                .map(a -> new AssignmentPlanItem(a, classifyUrgency(a, referenceTime), Duration.between(referenceTime, a.getDueDate()).toMinutes()))
-                .sorted(Comparator.comparingInt((AssignmentPlanItem item) -> urgencyRank(item.urgency()))
-                        .thenComparingInt(item -> priorityRank(item.assignment().getPriority()))
-                        .thenComparing(item -> item.assignment().getDueDate())
-                        .thenComparingInt(item -> item.assignment().getId()))
-                .toList();
-    }
-
-    private AssignmentPlanItem.Urgency classifyUrgency(Assignment assignment, LocalDateTime referenceTime) {
-        if (assignment.getDueDate().isBefore(referenceTime)) return AssignmentPlanItem.Urgency.OVERDUE;
-        if (assignment.getDueDate().toLocalDate().equals(referenceTime.toLocalDate())) return AssignmentPlanItem.Urgency.DUE_TODAY;
-        if (!assignment.getDueDate().isAfter(referenceTime.plusHours(48))) return AssignmentPlanItem.Urgency.DUE_SOON;
-        return AssignmentPlanItem.Urgency.UPCOMING;
-    }
-
-    private int urgencyRank(AssignmentPlanItem.Urgency urgency) {
-        return switch (urgency) {
-            case OVERDUE -> 0;
-            case DUE_TODAY -> 1;
-            case DUE_SOON -> 2;
-            case UPCOMING -> 3;
-        };
-    }
-
-    private int priorityRank(Assignment.Priority priority) {
-        return switch (priority) {
-            case HIGH -> 0;
-            case MEDIUM -> 1;
-            case LOW -> 2;
-        };
-    }
-
-    public boolean updateAssignment(int assignmentId, int courseId, String title, String description, LocalDateTime dueDate, Assignment.Priority priority) {
-        requireAssignment(assignmentId);
-        requireCourse(courseId);
-        Assignment assignment = new Assignment(courseId, title, description, dueDate, priority);
-        return databaseManager.updateAssignment(assignmentId, assignment.getCourseId(), assignment.getTitle(), assignment.getDescription(), assignment.getDueDate(), assignment.getPriority());
-    }
-
-    public boolean deleteAssignment(int assignmentId) { requireAssignment(assignmentId); return databaseManager.deleteAssignment(assignmentId); }
-    public boolean completeAssignment(int assignmentId) { requireAssignment(assignmentId); return databaseManager.setAssignmentCompleted(assignmentId, true); }
-    public boolean reopenAssignment(int assignmentId) { requireAssignment(assignmentId); return databaseManager.setAssignmentCompleted(assignmentId, false); }
-
-    public StudySession recordStudySession(int courseId, LocalDateTime startTime, int durationMinutes, String notes) {
-        requireCourse(courseId);
-        return databaseManager.addStudySession(courseId, startTime, durationMinutes, notes);
-    }
-    public List<StudySession> getStudySessions() { return databaseManager.getAllStudySessions(); }
-    public List<StudySession> getStudySessionsForCourse(int courseId) { requireCourse(courseId); return databaseManager.getStudySessionsByCourse(courseId); }
-
-    public boolean updateStudySession(int sessionId, int courseId, LocalDateTime startTime, int durationMinutes, String notes) {
-        requireStudySession(sessionId); requireCourse(courseId);
-        StudySession session = new StudySession(courseId, startTime, durationMinutes, notes);
-        return databaseManager.updateStudySession(sessionId, session.getCourseId(), session.getStartTime(), session.getDurationMinutes(), session.getNotes());
-    }
-    public boolean deleteStudySession(int sessionId) { requireStudySession(sessionId); return databaseManager.deleteStudySession(sessionId); }
-    public int getTotalStudyMinutes() { return databaseManager.getAllStudySessions().stream().mapToInt(StudySession::getDurationMinutes).sum(); }
-    public int getTotalStudyMinutesForCourse(int courseId) { requireCourse(courseId); return databaseManager.getStudySessionsByCourse(courseId).stream().mapToInt(StudySession::getDurationMinutes).sum(); }
-
-    public DailyStudyGoal getDailyStudyGoal(int targetMinutes) {
-        return getDailyStudyGoal(LocalDate.now(), targetMinutes);
-    }
-
-    public DailyStudyGoal getDailyStudyGoal(LocalDate date, int targetMinutes) {
-        if (date == null) throw new IllegalArgumentException("Study goal date cannot be null.");
-        if (targetMinutes <= 0) throw new IllegalArgumentException("Study goal target must be greater than zero.");
-
-        int studiedMinutes = databaseManager.getAllStudySessions().stream()
-                .filter(session -> session.getStartTime().toLocalDate().equals(date))
-                .mapToInt(StudySession::getDurationMinutes)
-                .sum();
-
-        return new DailyStudyGoal(date, targetMinutes, studiedMinutes);
-    }
-
-    public StudyProgressAnalytics getStudyProgressAnalytics() { return getStudyProgressAnalytics(LocalDate.now()); }
-    public StudyProgressAnalytics getStudyProgressAnalytics(LocalDate referenceDate) {
-        if (referenceDate == null) throw new IllegalArgumentException("Study progress reference date cannot be null.");
-        LocalDate weekStart = referenceDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        LocalDate weekEnd = weekStart.plusDays(6);
-        LocalDateTime startInclusive = weekStart.atStartOfDay();
-        LocalDateTime endExclusive = weekStart.plusDays(7).atStartOfDay();
-        List<StudySession> weeklySessions = databaseManager.getAllStudySessions().stream()
-                .filter(s -> !s.getStartTime().isBefore(startInclusive)).filter(s -> s.getStartTime().isBefore(endExclusive)).toList();
-        int totalMinutes = weeklySessions.stream().mapToInt(StudySession::getDurationMinutes).sum();
-        int longestSession = weeklySessions.stream().mapToInt(StudySession::getDurationMinutes).max().orElse(0);
-        Set<LocalDate> activeDays = weeklySessions.stream().map(s -> s.getStartTime().toLocalDate()).collect(Collectors.toSet());
-        double average = activeDays.isEmpty() ? 0.0 : totalMinutes / (double) activeDays.size();
-        return new StudyProgressAnalytics(weekStart, weekEnd, totalMinutes, weeklySessions.size(), activeDays.size(), longestSession, average);
-    }
-
-    public StudyTrend getStudyTrend() { return getStudyTrend(LocalDate.now()); }
-
-    public StudyTrend getStudyTrend(LocalDate referenceDate) {
-        if (referenceDate == null) throw new IllegalArgumentException("Study trend reference date cannot be null.");
-
-        LocalDate currentWeekStart = referenceDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        LocalDate previousWeekStart = currentWeekStart.minusWeeks(1);
-        LocalDateTime previousStartInclusive = previousWeekStart.atStartOfDay();
-        LocalDateTime currentStartInclusive = currentWeekStart.atStartOfDay();
-        LocalDateTime nextWeekStartExclusive = currentWeekStart.plusWeeks(1).atStartOfDay();
-
-        int previousMinutes = databaseManager.getAllStudySessions().stream()
-                .filter(session -> !session.getStartTime().isBefore(previousStartInclusive))
-                .filter(session -> session.getStartTime().isBefore(currentStartInclusive))
-                .mapToInt(StudySession::getDurationMinutes)
-                .sum();
-        int currentMinutes = databaseManager.getAllStudySessions().stream()
-                .filter(session -> !session.getStartTime().isBefore(currentStartInclusive))
-                .filter(session -> session.getStartTime().isBefore(nextWeekStartExclusive))
-                .mapToInt(StudySession::getDurationMinutes)
-                .sum();
-
-        int minuteChange = currentMinutes - previousMinutes;
-        double percentageChange = previousMinutes == 0
-                ? 0.0
-                : minuteChange * 100.0 / previousMinutes;
-        return new StudyTrend(currentWeekStart, currentMinutes, previousMinutes, minuteChange, percentageChange);
-    }
-
-    public StudyStreak getStudyStreak() { return getStudyStreak(LocalDate.now()); }
-
-    public StudyStreak getStudyStreak(LocalDate referenceDate) {
-        if (referenceDate == null) throw new IllegalArgumentException("Study streak reference date cannot be null.");
-
-        List<LocalDate> studyDays = databaseManager.getAllStudySessions().stream()
-                .map(session -> session.getStartTime().toLocalDate())
-                .filter(date -> !date.isAfter(referenceDate))
-                .distinct()
-                .sorted()
-                .toList();
-
-        if (studyDays.isEmpty()) {
-            return new StudyStreak(referenceDate, 0, 0, false, null);
-        }
-
-        int longestStreak = 1;
-        int runningStreak = 1;
-        for (int i = 1; i < studyDays.size(); i++) {
-            if (studyDays.get(i).equals(studyDays.get(i - 1).plusDays(1))) {
-                runningStreak++;
-            } else {
-                runningStreak = 1;
-            }
-            longestStreak = Math.max(longestStreak, runningStreak);
-        }
-
-        LocalDate lastStudyDate = studyDays.get(studyDays.size() - 1);
-        int currentStreak = 1;
-        for (int i = studyDays.size() - 1; i > 0; i--) {
-            if (studyDays.get(i - 1).equals(studyDays.get(i).minusDays(1))) {
-                currentStreak++;
-            } else {
-                break;
-            }
-        }
-
-        return new StudyStreak(referenceDate, currentStreak, longestStreak,
-                lastStudyDate.equals(referenceDate), lastStudyDate);
-    }
-
-    public double getAssignmentCompletionPercentage() {
-        List<Assignment> assignments = databaseManager.getAllAssignments();
-        if (assignments.isEmpty()) return 0.0;
-        long completed = assignments.stream().filter(Assignment::isCompleted).count();
-        return completed * 100.0 / assignments.size();
-    }
-
-    public DashboardSummary getDashboardSummary() {
-        List<Course> courses = databaseManager.getAllCourses();
-        List<Assignment> assignments = databaseManager.getAllAssignments();
-        int completed = (int) assignments.stream().filter(Assignment::isCompleted).count();
-        int pending = assignments.size() - completed;
-        int overdue = (int) assignments.stream().filter(Assignment::isOverdue).count();
-        return new DashboardSummary(courses.size(), assignments.size(), pending, completed, overdue, getTotalStudyMinutes(), getAssignmentCompletionPercentage());
-    }
-
-    public DashboardAnalytics getDashboardAnalytics() {
-        LocalDateTime now = LocalDateTime.now();
-        List<Assignment> pending = databaseManager.getAllAssignments().stream().filter(a -> !a.isCompleted()).toList();
-        int upcoming = (int) pending.stream().filter(a -> !a.getDueDate().isBefore(now)).filter(a -> !a.getDueDate().isAfter(now.plusDays(7))).count();
-        int highPriority = (int) pending.stream().filter(a -> a.getPriority() == Assignment.Priority.HIGH).count();
-        Assignment nearest = pending.stream().filter(a -> !a.getDueDate().isBefore(now)).min(Comparator.comparing(Assignment::getDueDate)).orElse(null);
-        Course mostStudied = null;
-        int mostMinutes = 0;
-        for (Course course : databaseManager.getAllCourses()) {
-            int minutes = databaseManager.getStudySessionsByCourse(course.getId()).stream().mapToInt(StudySession::getDurationMinutes).sum();
-            if (minutes > mostMinutes) { mostMinutes = minutes; mostStudied = course; }
-        }
-        return new DashboardAnalytics(upcoming, highPriority, nearest, mostStudied, mostMinutes);
-    }
-
-    private Course requireCourse(int id) {
-        Course course = databaseManager.findCourseById(id);
-        if (course == null) throw new IllegalArgumentException("Course does not exist: " + id);
-        return course;
-    }
-    private Assignment requireAssignment(int id) {
-        Assignment assignment = databaseManager.findAssignmentById(id);
-        if (assignment == null) throw new IllegalArgumentException("Assignment does not exist: " + id);
-        return assignment;
-    }
-    private StudySession requireStudySession(int id) {
-        StudySession session = databaseManager.findStudySessionById(id);
-        if (session == null) throw new IllegalArgumentException("Study session does not exist: " + id);
-        return session;
-    }
+    public StudyProgressAnalytics getStudyProgressAnalytics(){return getStudyProgressAnalytics(LocalDate.now());} public StudyProgressAnalytics getStudyProgressAnalytics(LocalDate date){if(date==null)throw new IllegalArgumentException("Study progress reference date cannot be null.");LocalDate start=date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)),end=start.plusDays(6);LocalDateTime a=start.atStartOfDay(),b=start.plusDays(7).atStartOfDay();List<StudySession> sessions=databaseManager.getAllStudySessions().stream().filter(s->!s.getStartTime().isBefore(a)).filter(s->s.getStartTime().isBefore(b)).toList();int total=sessions.stream().mapToInt(StudySession::getDurationMinutes).sum(),longest=sessions.stream().mapToInt(StudySession::getDurationMinutes).max().orElse(0);Set<LocalDate> days=sessions.stream().map(s->s.getStartTime().toLocalDate()).collect(Collectors.toSet());return new StudyProgressAnalytics(start,end,total,sessions.size(),days.size(),longest,days.isEmpty()?0.0:total/(double)days.size());}
+    public StudyTrend getStudyTrend(){return getStudyTrend(LocalDate.now());} public StudyTrend getStudyTrend(LocalDate date){if(date==null)throw new IllegalArgumentException("Study trend reference date cannot be null.");LocalDate current=date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)),previous=current.minusWeeks(1);LocalDateTime a=previous.atStartOfDay(),b=current.atStartOfDay(),c=current.plusWeeks(1).atStartOfDay();int pm=databaseManager.getAllStudySessions().stream().filter(s->!s.getStartTime().isBefore(a)&&s.getStartTime().isBefore(b)).mapToInt(StudySession::getDurationMinutes).sum();int cm=databaseManager.getAllStudySessions().stream().filter(s->!s.getStartTime().isBefore(b)&&s.getStartTime().isBefore(c)).mapToInt(StudySession::getDurationMinutes).sum();int change=cm-pm;return new StudyTrend(current,cm,pm,change,pm==0?0.0:change*100.0/pm);}
+    public StudyStreak getStudyStreak(){return getStudyStreak(LocalDate.now());} public StudyStreak getStudyStreak(LocalDate date){if(date==null)throw new IllegalArgumentException("Study streak reference date cannot be null.");List<LocalDate> days=databaseManager.getAllStudySessions().stream().map(s->s.getStartTime().toLocalDate()).filter(d->!d.isAfter(date)).distinct().sorted().toList();if(days.isEmpty())return new StudyStreak(date,0,0,false,null);int longest=1,running=1;for(int i=1;i<days.size();i++){if(days.get(i).equals(days.get(i-1).plusDays(1)))running++;else running=1;longest=Math.max(longest,running);}LocalDate last=days.get(days.size()-1);int current=1;for(int i=days.size()-1;i>0;i--){if(days.get(i-1).equals(days.get(i).minusDays(1)))current++;else break;}return new StudyStreak(date,current,longest,last.equals(date),last);}
+    public double getAssignmentCompletionPercentage(){List<Assignment> a=databaseManager.getAllAssignments();if(a.isEmpty())return 0.0;return a.stream().filter(Assignment::isCompleted).count()*100.0/a.size();}
+    public DashboardSummary getDashboardSummary(){List<Course> c=databaseManager.getAllCourses();List<Assignment>a=databaseManager.getAllAssignments();int completed=(int)a.stream().filter(Assignment::isCompleted).count(),pending=a.size()-completed,overdue=(int)a.stream().filter(Assignment::isOverdue).count();return new DashboardSummary(c.size(),a.size(),pending,completed,overdue,getTotalStudyMinutes(),getAssignmentCompletionPercentage());}
+    public DashboardAnalytics getDashboardAnalytics(){LocalDateTime now=LocalDateTime.now();List<Assignment>p=databaseManager.getAllAssignments().stream().filter(a->!a.isCompleted()).toList();int upcoming=(int)p.stream().filter(a->!a.getDueDate().isBefore(now)&&!a.getDueDate().isAfter(now.plusDays(7))).count(),high=(int)p.stream().filter(a->a.getPriority()==Assignment.Priority.HIGH).count();Assignment nearest=p.stream().filter(a->!a.getDueDate().isBefore(now)).min(Comparator.comparing(Assignment::getDueDate)).orElse(null);Course most=null;int max=0;for(Course c:databaseManager.getAllCourses()){int m=databaseManager.getStudySessionsByCourse(c.getId()).stream().mapToInt(StudySession::getDurationMinutes).sum();if(m>max){max=m;most=c;}}return new DashboardAnalytics(upcoming,high,nearest,most,max);}
+    private Course requireCourse(int id){Course x=databaseManager.findCourseById(id);if(x==null)throw new IllegalArgumentException("Course does not exist: "+id);return x;} private Assignment requireAssignment(int id){Assignment x=databaseManager.findAssignmentById(id);if(x==null)throw new IllegalArgumentException("Assignment does not exist: "+id);return x;} private StudySession requireStudySession(int id){StudySession x=databaseManager.findStudySessionById(id);if(x==null)throw new IllegalArgumentException("Study session does not exist: "+id);return x;}
 }
