@@ -1,6 +1,7 @@
 package com.studysync;
 
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
@@ -21,7 +22,7 @@ public final class StudyPlanSummaryView {
         metrics.add(metric("Daily Goal", summary.dailyTargetMinutes() + " min"), 2, 0);
         metrics.add(metric("Study Blocks", summary.blockCount()), 0, 1);
         metrics.add(metric("Still Uncovered", summary.remainingAfterPlanMinutes() + " min"), 1, 1);
-        metrics.add(metric("Plan Coverage", summary.coversRemainingDailyTarget() ? "Covered" : "Needs more time"), 2, 1);
+        metrics.add(metric("Plan Coverage", String.format("%.0f%%", summary.coveragePercentage())), 2, 1);
 
         for (int i = 0; i < 3; i++) {
             ColumnConstraints column = new ColumnConstraints();
@@ -29,6 +30,10 @@ public final class StudyPlanSummaryView {
             column.setHgrow(Priority.ALWAYS);
             metrics.getColumnConstraints().add(column);
         }
+
+        ProgressBar coverage = new ProgressBar(summary.coveragePercentage() / 100.0);
+        coverage.setMaxWidth(Double.MAX_VALUE);
+        coverage.setPrefHeight(12);
 
         String message;
         if (summary.studiedTodayMinutes() >= summary.dailyTargetMinutes()) {
@@ -41,7 +46,10 @@ public final class StudyPlanSummaryView {
             message = "The current plan leaves " + summary.remainingAfterPlanMinutes() + " minutes to schedule after these blocks.";
         }
 
-        return new VBox(12, metrics, styledLabel(message, "assignment-meta"));
+        Label progressText = styledLabel(
+                summary.accountedMinutes() + " of " + summary.dailyTargetMinutes() + " minutes accounted for",
+                "assignment-meta");
+        return new VBox(12, metrics, coverage, progressText, styledLabel(message, "assignment-meta"));
     }
 
     private static VBox metric(String title, Object value) {
