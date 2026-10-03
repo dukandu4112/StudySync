@@ -38,7 +38,8 @@ public final class SuggestedStudyPlanView {
     private static VBox block(int number, StudyPlanItem item, StudySyncService service, Runnable refresh) {
         Label order = styledLabel("Block " + number, "metric-title");
         Label minutes = styledLabel(item.suggestedMinutes() + " min", "metric-value");
-        HBox heading = new HBox(12, order, minutes);
+        Label priority = styledLabel(item.priorityLabel(), "assignment-meta");
+        HBox heading = new HBox(12, order, minutes, priority);
         Label course = styledLabel(item.course().getCode() + " — " + item.course().getName(), "assignment-title");
         Label reason = styledLabel(item.reason(), "assignment-meta");
         VBox card = new VBox(6, heading, course, reason);
