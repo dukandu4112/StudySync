@@ -31,4 +31,11 @@ public record StudyPlanItem(
         }
         return "Extended study block — split the time into focused segments with a short break.";
     }
+
+    /** Practical recovery guidance to keep longer study plans sustainable. */
+    public String breakGuidance() {
+        if (suggestedMinutes <= 30) return "Break: optional 5-minute reset after the block.";
+        if (suggestedMinutes <= 60) return "Break: take 5–10 minutes after the block.";
+        return "Break: take 5–10 minutes near the midpoint, then reset before continuing.";
+    }
 }
