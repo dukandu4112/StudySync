@@ -28,7 +28,9 @@ class StudyPlanSummaryTest {
         assertEquals(0, summary.studiedTodayMinutes());
         assertEquals(0, summary.remainingAfterPlanMinutes());
         assertEquals(90, summary.accountedMinutes());
+        assertEquals(90, summary.remainingStudyMinutes());
         assertEquals(100.0, summary.coveragePercentage(), 0.001);
+        assertEquals("Fully planned", summary.workloadStatus());
         assertTrue(summary.coversRemainingDailyTarget());
     }
 
@@ -47,7 +49,9 @@ class StudyPlanSummaryTest {
         assertEquals(1, summary.blockCount());
         assertEquals(45, summary.remainingAfterPlanMinutes());
         assertEquals(75, summary.accountedMinutes());
+        assertEquals(75, summary.remainingStudyMinutes());
         assertEquals(62.5, summary.coveragePercentage(), 0.001);
+        assertEquals("Partially planned", summary.workloadStatus());
         assertFalse(summary.coversRemainingDailyTarget());
     }
 
@@ -64,8 +68,19 @@ class StudyPlanSummaryTest {
         assertEquals(0, summary.blockCount());
         assertEquals(0, summary.remainingAfterPlanMinutes());
         assertEquals(120, summary.accountedMinutes());
+        assertEquals(0, summary.remainingStudyMinutes());
         assertEquals(100.0, summary.coveragePercentage(), 0.001);
+        assertEquals("Goal complete", summary.workloadStatus());
         assertTrue(summary.coversRemainingDailyTarget());
+    }
+
+    @Test
+    void noAvailablePlanReportsNeedsPlanning() {
+        StudyPlanSummary summary = new StudyPlanSummary(0, 0, 120, 30, 90);
+
+        assertEquals(90, summary.remainingStudyMinutes());
+        assertEquals("Needs planning", summary.workloadStatus());
+        assertFalse(summary.coversRemainingDailyTarget());
     }
 
     private StudySyncService service(String fileName) {
