@@ -20,4 +20,15 @@ public record StudyPlanItem(
         if (recommendationScore >= 40) return "Medium priority";
         return "Low priority";
     }
+
+    /** Short focus guidance so a suggested block communicates how to use the time. */
+    public String focusGuidance() {
+        if (suggestedMinutes <= 30) {
+            return "Focused sprint — work on the highest-priority task for this course.";
+        }
+        if (suggestedMinutes <= 60) {
+            return "Deep study block — focus on one major task and avoid switching topics.";
+        }
+        return "Extended study block — split the time into focused segments with a short break.";
+    }
 }
