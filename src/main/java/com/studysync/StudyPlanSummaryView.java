@@ -35,6 +35,14 @@ public final class StudyPlanSummaryView {
         coverage.setMaxWidth(Double.MAX_VALUE);
         coverage.setPrefHeight(12);
 
+        Label status = styledLabel("Plan Status: " + summary.workloadStatus(), "assignment-title");
+        Label remaining = styledLabel(
+                summary.remainingStudyMinutes() + " minutes of actual study remaining today",
+                "assignment-meta");
+        Label progressText = styledLabel(
+                summary.accountedMinutes() + " of " + summary.dailyTargetMinutes() + " minutes accounted for",
+                "assignment-meta");
+
         String message;
         if (summary.studiedTodayMinutes() >= summary.dailyTargetMinutes()) {
             message = "Today's study goal is complete.";
@@ -46,10 +54,8 @@ public final class StudyPlanSummaryView {
             message = "The current plan leaves " + summary.remainingAfterPlanMinutes() + " minutes to schedule after these blocks.";
         }
 
-        Label progressText = styledLabel(
-                summary.accountedMinutes() + " of " + summary.dailyTargetMinutes() + " minutes accounted for",
-                "assignment-meta");
-        return new VBox(12, metrics, coverage, progressText, styledLabel(message, "assignment-meta"));
+        return new VBox(12, status, metrics, coverage, progressText, remaining,
+                styledLabel(message, "assignment-meta"));
     }
 
     private static VBox metric(String title, Object value) {
