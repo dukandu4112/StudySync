@@ -42,7 +42,8 @@ public final class SuggestedStudyPlanView {
         HBox heading = new HBox(12, order, minutes, priority);
         Label course = styledLabel(item.course().getCode() + " — " + item.course().getName(), "assignment-title");
         Label reason = styledLabel(item.reason(), "assignment-meta");
-        VBox card = new VBox(6, heading, course, reason);
+        Label guidance = styledLabel("Focus: " + item.focusGuidance(), "assignment-meta");
+        VBox card = new VBox(6, heading, course, reason, guidance);
 
         if (service != null) {
             Button complete = new Button("Complete " + item.suggestedMinutes() + " min block");
