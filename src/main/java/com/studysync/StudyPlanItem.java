@@ -13,4 +13,11 @@ public record StudyPlanItem(
         if (reason == null || reason.isBlank()) throw new IllegalArgumentException("Study plan reason cannot be empty.");
         if (recommendationScore < 0) throw new IllegalArgumentException("Recommendation score cannot be negative.");
     }
+
+    /** Simple user-facing urgency label derived from the recommendation score. */
+    public String priorityLabel() {
+        if (recommendationScore >= 80) return "High priority";
+        if (recommendationScore >= 40) return "Medium priority";
+        return "Low priority";
+    }
 }
