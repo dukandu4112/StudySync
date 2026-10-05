@@ -38,4 +38,11 @@ public record StudyPlanItem(
         if (suggestedMinutes <= 60) return "Break: take 5–10 minutes after the block.";
         return "Break: take 5–10 minutes near the midpoint, then reset before continuing.";
     }
+
+    /** Quick effort cue combining the block duration with its recommendation urgency. */
+    public String effortLabel() {
+        if (suggestedMinutes > 60 || recommendationScore >= 80) return "Heavy focus";
+        if (suggestedMinutes > 30 || recommendationScore >= 40) return "Moderate focus";
+        return "Light focus";
+    }
 }
