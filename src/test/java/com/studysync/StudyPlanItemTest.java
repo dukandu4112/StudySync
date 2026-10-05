@@ -20,24 +20,26 @@ class StudyPlanItemTest {
     @Test void breakGuidanceUsesPostBlockBreakFromThirtyOneThroughSixtyMinutes() { assertEquals("Break: take 5–10 minutes after the block.", item(31,50).breakGuidance()); assertEquals("Break: take 5–10 minutes after the block.", item(60,50).breakGuidance()); }
     @Test void breakGuidanceUsesMidpointBreakAboveSixtyMinutes() { assertEquals("Break: take 5–10 minutes near the midpoint, then reset before continuing.", item(61,50).breakGuidance()); assertEquals("Break: take 5–10 minutes near the midpoint, then reset before continuing.", item(120,50).breakGuidance()); }
 
+    @Test void effortLabelUsesLightFocusOnlyForShortLowUrgencyBlocks() { assertEquals("Light focus", item(30,0).effortLabel()); assertEquals("Light focus", item(30,39).effortLabel()); }
+    @Test void effortLabelUsesModerateFocusForMediumDurationOrUrgency() { assertEquals("Moderate focus", item(31,0).effortLabel()); assertEquals("Moderate focus", item(60,79).effortLabel()); assertEquals("Moderate focus", item(30,40).effortLabel()); }
+    @Test void effortLabelUsesHeavyFocusForLongOrHighUrgencyBlocks() { assertEquals("Heavy focus", item(61,0).effortLabel()); assertEquals("Heavy focus", item(30,80).effortLabel()); assertEquals("Heavy focus", item(120,100).effortLabel()); }
+
     @Test
-    void effortLabelUsesLightFocusOnlyForShortLowUrgencyBlocks() {
-        assertEquals("Light focus", item(30, 0).effortLabel());
-        assertEquals("Light focus", item(30, 39).effortLabel());
+    void actionCueStartsHighPriorityWorkNext() {
+        assertEquals("Start next — protect this block from interruptions.", item(30,80).actionCue());
+        assertEquals("Start next — protect this block from interruptions.", item(30,100).actionCue());
     }
 
     @Test
-    void effortLabelUsesModerateFocusForMediumDurationOrUrgency() {
-        assertEquals("Moderate focus", item(31, 0).effortLabel());
-        assertEquals("Moderate focus", item(60, 79).effortLabel());
-        assertEquals("Moderate focus", item(30, 40).effortLabel());
+    void actionCueSchedulesMediumPriorityWorkToday() {
+        assertEquals("Schedule today — complete it after higher-priority work.", item(30,40).actionCue());
+        assertEquals("Schedule today — complete it after higher-priority work.", item(30,79).actionCue());
     }
 
     @Test
-    void effortLabelUsesHeavyFocusForLongOrHighUrgencyBlocks() {
-        assertEquals("Heavy focus", item(61, 0).effortLabel());
-        assertEquals("Heavy focus", item(30, 80).effortLabel());
-        assertEquals("Heavy focus", item(120, 100).effortLabel());
+    void actionCueFitsLowPriorityWorkAroundHigherPriorityBlocks() {
+        assertEquals("Fit in when available — use it to maintain course momentum.", item(30,0).actionCue());
+        assertEquals("Fit in when available — use it to maintain course momentum.", item(30,39).actionCue());
     }
 
     @Test void rejectsInvalidPlanItems() { assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(null,30,"Review",50)); assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(course,0,"Review",50)); assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(course,30,"",50)); assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(course,30,"Review",-1)); }
