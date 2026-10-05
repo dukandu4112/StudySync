@@ -39,7 +39,8 @@ public final class SuggestedStudyPlanView {
         Label order = styledLabel("Block " + number, "metric-title");
         Label minutes = styledLabel(item.suggestedMinutes() + " min", "metric-value");
         Label priority = styledLabel(item.priorityLabel(), "assignment-meta");
-        HBox heading = new HBox(12, order, minutes, priority);
+        Label effort = styledLabel(item.effortLabel(), "assignment-meta");
+        HBox heading = new HBox(12, order, minutes, priority, effort);
         Label course = styledLabel(item.course().getCode() + " — " + item.course().getName(), "assignment-title");
         Label reason = styledLabel(item.reason(), "assignment-meta");
         Label guidance = styledLabel("Focus: " + item.focusGuidance(), "assignment-meta");
