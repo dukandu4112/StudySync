@@ -28,38 +28,46 @@ class StudyPlanItemTest {
 
     @Test
     void focusGuidanceUsesFocusedSprintThroughThirtyMinutes() {
-        assertEquals("Focused sprint — work on the highest-priority task for this course.",
-                item(15, 50).focusGuidance());
-        assertEquals("Focused sprint — work on the highest-priority task for this course.",
-                item(30, 50).focusGuidance());
+        assertEquals("Focused sprint — work on the highest-priority task for this course.", item(15, 50).focusGuidance());
+        assertEquals("Focused sprint — work on the highest-priority task for this course.", item(30, 50).focusGuidance());
     }
 
     @Test
     void focusGuidanceUsesDeepStudyFromThirtyOneThroughSixtyMinutes() {
-        assertEquals("Deep study block — focus on one major task and avoid switching topics.",
-                item(31, 50).focusGuidance());
-        assertEquals("Deep study block — focus on one major task and avoid switching topics.",
-                item(60, 50).focusGuidance());
+        assertEquals("Deep study block — focus on one major task and avoid switching topics.", item(31, 50).focusGuidance());
+        assertEquals("Deep study block — focus on one major task and avoid switching topics.", item(60, 50).focusGuidance());
     }
 
     @Test
     void focusGuidanceUsesExtendedStudyAboveSixtyMinutes() {
-        assertEquals("Extended study block — split the time into focused segments with a short break.",
-                item(61, 50).focusGuidance());
-        assertEquals("Extended study block — split the time into focused segments with a short break.",
-                item(120, 50).focusGuidance());
+        assertEquals("Extended study block — split the time into focused segments with a short break.", item(61, 50).focusGuidance());
+        assertEquals("Extended study block — split the time into focused segments with a short break.", item(120, 50).focusGuidance());
+    }
+
+    @Test
+    void breakGuidanceIsOptionalThroughThirtyMinutes() {
+        assertEquals("Break: optional 5-minute reset after the block.", item(15, 50).breakGuidance());
+        assertEquals("Break: optional 5-minute reset after the block.", item(30, 50).breakGuidance());
+    }
+
+    @Test
+    void breakGuidanceUsesPostBlockBreakFromThirtyOneThroughSixtyMinutes() {
+        assertEquals("Break: take 5–10 minutes after the block.", item(31, 50).breakGuidance());
+        assertEquals("Break: take 5–10 minutes after the block.", item(60, 50).breakGuidance());
+    }
+
+    @Test
+    void breakGuidanceUsesMidpointBreakAboveSixtyMinutes() {
+        assertEquals("Break: take 5–10 minutes near the midpoint, then reset before continuing.", item(61, 50).breakGuidance());
+        assertEquals("Break: take 5–10 minutes near the midpoint, then reset before continuing.", item(120, 50).breakGuidance());
     }
 
     @Test
     void rejectsInvalidPlanItems() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new StudyPlanItem(null, 30, "Review", 50));
-        assertThrows(IllegalArgumentException.class,
-                () -> new StudyPlanItem(course, 0, "Review", 50));
-        assertThrows(IllegalArgumentException.class,
-                () -> new StudyPlanItem(course, 30, "", 50));
-        assertThrows(IllegalArgumentException.class,
-                () -> new StudyPlanItem(course, 30, "Review", -1));
+        assertThrows(IllegalArgumentException.class, () -> new StudyPlanItem(null, 30, "Review", 50));
+        assertThrows(IllegalArgumentException.class, () -> new StudyPlanItem(course, 0, "Review", 50));
+        assertThrows(IllegalArgumentException.class, () -> new StudyPlanItem(course, 30, "", 50));
+        assertThrows(IllegalArgumentException.class, () -> new StudyPlanItem(course, 30, "Review", -1));
     }
 
     private StudyPlanItem item(int minutes, int score) {
