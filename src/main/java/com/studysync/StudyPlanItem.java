@@ -45,4 +45,13 @@ public record StudyPlanItem(
         if (suggestedMinutes > 30 || recommendationScore >= 40) return "Moderate focus";
         return "Light focus";
     }
+
+    /** Immediate action cue that turns the recommendation into a clear next step. */
+    public String actionCue() {
+        return switch (priorityLabel()) {
+            case "High priority" -> "Start next — protect this block from interruptions.";
+            case "Medium priority" -> "Schedule today — complete it after higher-priority work.";
+            default -> "Fit in when available — use it to maintain course momentum.";
+        };
+    }
 }
