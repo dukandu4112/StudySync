@@ -42,6 +42,13 @@ class StudyPlanItemTest {
         assertEquals("Fit in when available — use it to maintain course momentum.", item(30,39).actionCue());
     }
 
+    @Test
+    void planLabelSummarizesCourseDurationPriorityAndEffort() {
+        assertEquals("CSCI 2305 — 30 min — High priority — Heavy focus", item(30, 80).planLabel());
+        assertEquals("CSCI 2305 — 45 min — Medium priority — Moderate focus", item(45, 50).planLabel());
+        assertEquals("CSCI 2305 — 20 min — Low priority — Light focus", item(20, 20).planLabel());
+    }
+
     @Test void rejectsInvalidPlanItems() { assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(null,30,"Review",50)); assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(course,0,"Review",50)); assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(course,30,"",50)); assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(course,30,"Review",-1)); }
 
     private StudyPlanItem item(int minutes, int score) { return new StudyPlanItem(course, minutes, "Review upcoming work", score); }
