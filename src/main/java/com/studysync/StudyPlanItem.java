@@ -51,6 +51,17 @@ public record StudyPlanItem(
         return course.getCode() + " — " + suggestedMinutes + " min — " + priorityLabel() + " — " + effortLabel();
     }
 
+    /** Short sequencing cue for scanning the suggested plan in execution order. */
+    public String sequenceCue(int blockNumber, int totalBlocks) {
+        if (blockNumber <= 0 || totalBlocks <= 0 || blockNumber > totalBlocks) {
+            throw new IllegalArgumentException("Study plan sequence values are invalid.");
+        }
+        if (totalBlocks == 1) return "Only block — complete this study block to finish the plan.";
+        if (blockNumber == 1) return "First block — begin here.";
+        if (blockNumber == totalBlocks) return "Final block — finish here.";
+        return "Block " + blockNumber + " of " + totalBlocks + " — continue in plan order.";
+    }
+
     /** Immediate action cue that turns the recommendation into a clear next step. */
     public String actionCue() {
         return switch (priorityLabel()) {
