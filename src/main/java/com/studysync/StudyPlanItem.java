@@ -46,6 +46,11 @@ public record StudyPlanItem(
         return "Light focus";
     }
 
+    /** Compact block description used by planner summaries and accessibility-friendly UI. */
+    public String planLabel() {
+        return course.getCode() + " — " + suggestedMinutes + " min — " + priorityLabel() + " — " + effortLabel();
+    }
+
     /** Immediate action cue that turns the recommendation into a clear next step. */
     public String actionCue() {
         return switch (priorityLabel()) {
