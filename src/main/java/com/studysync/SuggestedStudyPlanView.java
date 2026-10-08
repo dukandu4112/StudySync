@@ -30,12 +30,12 @@ public final class SuggestedStudyPlanView {
         int totalMinutes = plan.stream().mapToInt(StudyPlanItem::suggestedMinutes).sum();
         list.getChildren().add(styledLabel("Suggested total: " + totalMinutes + " minutes", "assignment-title"));
         for (int i = 0; i < plan.size(); i++) {
-            list.getChildren().add(block(i + 1, plan.get(i), service, refresh));
+            list.getChildren().add(block(i + 1, plan.size(), plan.get(i), service, refresh));
         }
         return list;
     }
 
-    private static VBox block(int number, StudyPlanItem item, StudySyncService service, Runnable refresh) {
+    private static VBox block(int number, int totalBlocks, StudyPlanItem item, StudySyncService service, Runnable refresh) {
         Label order = styledLabel("Block " + number, "metric-title");
         Label minutes = styledLabel(item.suggestedMinutes() + " min", "metric-value");
         Label priority = styledLabel(item.priorityLabel(), "assignment-meta");
@@ -44,10 +44,11 @@ public final class SuggestedStudyPlanView {
         Label course = styledLabel(item.course().getCode() + " — " + item.course().getName(), "assignment-title");
         course.setAccessibleText(item.planLabel());
         Label reason = styledLabel(item.reason(), "assignment-meta");
+        Label sequence = styledLabel(item.sequenceCue(number, totalBlocks), "assignment-meta");
         Label action = styledLabel("Next step: " + item.actionCue(), "assignment-title");
         Label guidance = styledLabel("Focus: " + item.focusGuidance(), "assignment-meta");
         Label breakGuidance = styledLabel(item.breakGuidance(), "assignment-meta");
-        VBox card = new VBox(6, heading, course, reason, action, guidance, breakGuidance);
+        VBox card = new VBox(6, heading, course, sequence, reason, action, guidance, breakGuidance);
 
         if (service != null) {
             Button complete = new Button("Complete " + item.suggestedMinutes() + " min block");
