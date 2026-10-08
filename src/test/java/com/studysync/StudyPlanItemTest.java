@@ -49,6 +49,21 @@ class StudyPlanItemTest {
         assertEquals("CSCI 2305 — 20 min — Low priority — Light focus", item(20, 20).planLabel());
     }
 
+    @Test
+    void sequenceCueDistinguishesOnlyFirstMiddleAndFinalBlocks() {
+        assertEquals("Only block — complete this study block to finish the plan.", item(30, 50).sequenceCue(1, 1));
+        assertEquals("First block — begin here.", item(30, 50).sequenceCue(1, 4));
+        assertEquals("Block 2 of 4 — continue in plan order.", item(30, 50).sequenceCue(2, 4));
+        assertEquals("Final block — finish here.", item(30, 50).sequenceCue(4, 4));
+    }
+
+    @Test
+    void sequenceCueRejectsInvalidPositions() {
+        assertThrows(IllegalArgumentException.class, () -> item(30, 50).sequenceCue(0, 2));
+        assertThrows(IllegalArgumentException.class, () -> item(30, 50).sequenceCue(1, 0));
+        assertThrows(IllegalArgumentException.class, () -> item(30, 50).sequenceCue(3, 2));
+    }
+
     @Test void rejectsInvalidPlanItems() { assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(null,30,"Review",50)); assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(course,0,"Review",50)); assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(course,30,"",50)); assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(course,30,"Review",-1)); }
 
     private StudyPlanItem item(int minutes, int score) { return new StudyPlanItem(course, minutes, "Review upcoming work", score); }
