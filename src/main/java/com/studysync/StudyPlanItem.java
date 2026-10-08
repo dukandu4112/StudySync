@@ -62,6 +62,11 @@ public record StudyPlanItem(
         return "Block " + blockNumber + " of " + totalBlocks + " — continue in plan order.";
     }
 
+    /** Accessible summary that includes the block's position in the plan. */
+    public String accessiblePlanLabel(int blockNumber, int totalBlocks) {
+        return planLabel() + ". " + sequenceCue(blockNumber, totalBlocks);
+    }
+
     /** Immediate action cue that turns the recommendation into a clear next step. */
     public String actionCue() {
         return switch (priorityLabel()) {
