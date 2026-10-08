@@ -42,7 +42,7 @@ public final class SuggestedStudyPlanView {
         Label effort = styledLabel(item.effortLabel(), "assignment-meta");
         HBox heading = new HBox(12, order, minutes, priority, effort);
         Label course = styledLabel(item.course().getCode() + " — " + item.course().getName(), "assignment-title");
-        course.setAccessibleText(item.planLabel());
+        course.setAccessibleText(item.accessiblePlanLabel(number, totalBlocks));
         Label reason = styledLabel(item.reason(), "assignment-meta");
         Label sequence = styledLabel(item.sequenceCue(number, totalBlocks), "assignment-meta");
         Label action = styledLabel("Next step: " + item.actionCue(), "assignment-title");
