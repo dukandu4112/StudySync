@@ -64,6 +64,22 @@ class StudyPlanItemTest {
         assertThrows(IllegalArgumentException.class, () -> item(30, 50).sequenceCue(3, 2));
     }
 
+    @Test
+    void accessiblePlanLabelIncludesSummaryAndSequence() {
+        assertEquals("CSCI 2305 — 30 min — High priority — Heavy focus. First block — begin here.",
+                item(30, 80).accessiblePlanLabel(1, 3));
+        assertEquals("CSCI 2305 — 20 min — Low priority — Light focus. Final block — finish here.",
+                item(20, 20).accessiblePlanLabel(3, 3));
+        assertEquals("CSCI 2305 — 45 min — Medium priority — Moderate focus. Only block — complete this study block to finish the plan.",
+                item(45, 50).accessiblePlanLabel(1, 1));
+    }
+
+    @Test
+    void accessiblePlanLabelRejectsInvalidSequence() {
+        assertThrows(IllegalArgumentException.class, () -> item(30, 50).accessiblePlanLabel(0, 2));
+        assertThrows(IllegalArgumentException.class, () -> item(30, 50).accessiblePlanLabel(3, 2));
+    }
+
     @Test void rejectsInvalidPlanItems() { assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(null,30,"Review",50)); assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(course,0,"Review",50)); assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(course,30,"",50)); assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(course,30,"Review",-1)); }
 
     private StudyPlanItem item(int minutes, int score) { return new StudyPlanItem(course, minutes, "Review upcoming work", score); }
