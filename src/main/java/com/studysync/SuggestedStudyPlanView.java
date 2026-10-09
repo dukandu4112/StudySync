@@ -29,6 +29,9 @@ public final class SuggestedStudyPlanView {
 
         int totalMinutes = plan.stream().mapToInt(StudyPlanItem::suggestedMinutes).sum();
         list.getChildren().add(styledLabel("Suggested plan: " + plan.size() + (plan.size() == 1 ? " block" : " blocks") + " · " + totalMinutes + " minutes", "assignment-title"));
+        if (plan.size() > 1) {
+            list.getChildren().add(styledLabel("Follow the blocks in order, starting with Block 1.", "assignment-meta"));
+        }
         for (int i = 0; i < plan.size(); i++) {
             list.getChildren().add(block(i + 1, plan.size(), plan.get(i), service, refresh));
         }
