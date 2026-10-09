@@ -39,7 +39,8 @@ public final class SuggestedStudyPlanView {
     }
 
     private static VBox block(int number, int totalBlocks, StudyPlanItem item, StudySyncService service, Runnable refresh) {
-        Label order = styledLabel("Block " + number + (number == 1 && totalBlocks > 1 ? " · Start here" : ""), "metric-title");
+        String positionHint = totalBlocks <= 1 ? "" : number == 1 ? " · Start here" : number == totalBlocks ? " · Final block" : "";
+        Label order = styledLabel("Block " + number + positionHint, "metric-title");
         Label minutes = styledLabel(item.suggestedMinutes() + " min", "metric-value");
         Label priority = styledLabel(item.priorityLabel(), "assignment-meta");
         Label effort = styledLabel(item.effortLabel(), "assignment-meta");
