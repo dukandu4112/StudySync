@@ -62,6 +62,15 @@ public record StudyPlanItem(
         return "Block " + blockNumber + " of " + totalBlocks + " — continue in plan order.";
     }
 
+    /** Consistent visible heading for a block's position in the plan. */
+    public String blockHeading(int blockNumber, int totalBlocks) {
+        sequenceCue(blockNumber, totalBlocks);
+        String suffix = totalBlocks == 1 ? " · Only block"
+                : blockNumber == 1 ? " · Start here"
+                : blockNumber == totalBlocks ? " · Final block" : "";
+        return "Block " + blockNumber + suffix;
+    }
+
     /** Accessible summary that includes the block's position in the plan. */
     public String accessiblePlanLabel(int blockNumber, int totalBlocks) {
         return planLabel() + ". " + sequenceCue(blockNumber, totalBlocks);
