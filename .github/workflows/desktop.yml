@@ -1,7 +1,7 @@
 name: Desktop packages
 on:
   push:
-    branches: [feature/desktop-v3]
+    branches: [feature/desktop-v3, main]
   pull_request:
     branches: [develop-2.3, main]
   workflow_dispatch:
@@ -29,13 +29,50 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: bash scripts/package-desktop.sh
-      - name: Test Windows native dialogs and repeat launch
+      - name: Test Windows native dialogs, accessibility metadata, and repeat launch
         if: runner.os == 'Windows'
         shell: pwsh
+        timeout-minutes: 5
         run: ./scripts/test-windows-dialogs.ps1
-      - name: Upload desktop app image
-        uses: actions/upload-artifact@v4
+      - name: Archive Windows application
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path target/desktop/StudySync -DestinationPath target/StudySync-3.0.0-Windows.zip
+      - name: Archive Linux application with executable permissions
+        if: runner.os == 'Linux'
+        shell: bash
+        run: tar -C target/desktop -czf target/StudySync-3.0.0-Linux.tar.gz StudySync
+      - uses: actions/upload-artifact@v4
         with:
-          name: StudySync-3.0.0-rc.4-${{ runner.os }}
-          path: target/desktop/
+          name: StudySync-3.0.0-${{ runner.os }}
+          path: |
+            target/StudySync-3.0.0-Windows.zip
+            target/StudySync-3.0.0-Linux.tar.gz
           if-no-files-found: error
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: StudySync-3.0.0-*
+          merge-multiple: true
+          path: release-assets
+      - name: Generate checksums and publish stable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(python3 -c 'import xml.etree.ElementTree as E; print(E.parse("pom.xml").getroot().find("{http://maven.apache.org/POM/4.0.0}version").text)')
+          [[ "$version" == "3.0.0" ]] || { echo "Not the stable 3.0.0 build"; exit 1; }
+          (cd release-assets && sha256sum StudySync-* > SHA256SUMS.txt)
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "Release already exists; its assets are left unchanged."
+          else
+            gh release create "v$version" --target "$GITHUB_SHA" --title "StudySync $version" --notes-file docs/RELEASE-NOTES.md release-assets/*
+          fi

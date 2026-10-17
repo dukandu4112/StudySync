@@ -48,7 +48,7 @@ public class StudySyncApplication extends Application {
             scene.getAccelerators().put(new javafx.scene.input.KeyCodeCombination(
                     javafx.scene.input.KeyCode.valueOf("DIGIT" + (index + 1)), javafx.scene.input.KeyCombination.CONTROL_DOWN), button::fire);
         }
-        stage.setTitle("StudySync 3.0 — Release Candidate");
+        stage.setTitle("StudySync 3.0.0");
         stage.setMinWidth(900);
         stage.setMinHeight(600);
         stage.setScene(scene);
@@ -120,6 +120,7 @@ public class StudySyncApplication extends Application {
         form.add(add, 1, 2);
         TextField search = new TextField();
         search.setPromptText("Search course code or name");
+        search.setAccessibleText("Search course code or name");
         Button clear = new Button("Clear");
         clear.getStyleClass().add("secondary-button");
         HBox tools = new HBox(10, search, clear);
@@ -149,12 +150,13 @@ public class StudySyncApplication extends Application {
 
     private void refreshCourseList(VBox list, String query) {
         List<Course> courses = UiSupport.filterCourses(service.getCourses(), query);
+        var page = DesktopPaging.slice(list, courses, query == null ? "" : query);
         list.getChildren().clear();
         if (courses.isEmpty()) {
             addEmpty(list, query == null || query.isBlank() ? "No courses yet. Add your first course above." : "No courses match your search.");
             return;
         }
-        for (Course course : courses) {
+        for (Course course : page.items()) {
             VBox details = new VBox(3, styledLabel(course.getCode(), "course-code"), styledLabel(course.getName(), "course-name"));
             HBox.setHgrow(details, Priority.ALWAYS);
             Button edit = new Button("Edit");
@@ -171,6 +173,7 @@ public class StudySyncApplication extends Application {
             row.getStyleClass().add("course-row");
             list.getChildren().add(row);
         }
+        DesktopPaging.controls(list, page, () -> refreshCourseList(list, query));
     }
 
     private boolean editCourse(Course course) {
@@ -249,8 +252,10 @@ public class StudySyncApplication extends Application {
         form.add(add, 1, 6);
         TextField search = new TextField();
         search.setPromptText("Search title or description");
+        search.setAccessibleText("Search title or description");
         ComboBox<String> filter = new ComboBox<>();
         filter.getItems().addAll("All", "Pending", "Completed", "Overdue", "High Priority", "Medium Priority", "Low Priority");
+        filter.setAccessibleText("Filter assignments by status or priority");
         filter.setValue("All");
         Button clear = new Button("Clear");
         clear.getStyleClass().add("secondary-button");
@@ -292,12 +297,14 @@ public class StudySyncApplication extends Application {
         else if ("Medium Priority".equals(filter)) priority = "MEDIUM";
         else if ("Low Priority".equals(filter)) priority = "LOW";
         List<Assignment> items = UiSupport.filterAssignments(service.getAssignments(), query, status, priority);
+        var page = DesktopPaging.slice(list, items, query + "|" + filter);
         list.getChildren().clear();
         if (items.isEmpty()) {
             addEmpty(list, "No assignments match the current view.");
             return;
         }
-        for (Assignment assignment : items) list.getChildren().add(assignmentRow(assignment, list, query, filter));
+        for (Assignment assignment : page.items()) list.getChildren().add(assignmentRow(assignment, list, query, filter));
+        DesktopPaging.controls(list, page, () -> refreshAssignmentList(list, query, filter));
     }
 
     private HBox assignmentRow(Assignment assignment, VBox target, String query, String filter) {
@@ -417,9 +424,11 @@ public class StudySyncApplication extends Application {
         form.add(add, 1, 5);
         TextField search = new TextField();
         search.setPromptText("Search notes or course");
+        search.setAccessibleText("Search notes or course");
         ComboBox<String> filter = new ComboBox<>();
         filter.getItems().add("All Courses");
         courses.stream().map(Course::getCode).forEach(filter.getItems()::add);
+        filter.setAccessibleText("Filter study sessions by course");
         filter.setValue("All Courses");
         Button clear = new Button("Clear");
         clear.getStyleClass().add("secondary-button");
@@ -451,12 +460,13 @@ public class StudySyncApplication extends Application {
 
     private void refreshStudySessionList(VBox list, String query, String courseFilter) {
         List<StudySession> sessions = UiSupport.filterStudySessions(service.getStudySessions(), service.getCourses(), query, courseFilter);
+        var page = DesktopPaging.slice(list, sessions, query + "|" + courseFilter);
         list.getChildren().clear();
         if (sessions.isEmpty()) {
             addEmpty(list, "No study sessions match the current view.");
             return;
         }
-        for (StudySession session : sessions) {
+        for (StudySession session : page.items()) {
             Course course = findCourse(session.getCourseId());
             String courseCode = course == null ? "Course #" + session.getCourseId() : course.getCode();
             Label title = styledLabel(courseCode + "  •  " + session.getDurationMinutes() + " minutes", "assignment-title");
@@ -490,6 +500,7 @@ public class StudySyncApplication extends Application {
             row.getStyleClass().add("course-row");
             list.getChildren().add(row);
         }
+        DesktopPaging.controls(list, page, () -> refreshStudySessionList(list, query, courseFilter));
     }
 
     private boolean editStudySession(StudySession session) {
@@ -587,6 +598,7 @@ public class StudySyncApplication extends Application {
     private void addFormField(GridPane form, String text, Node input, int row) {
         Label label = new Label(text);
         label.setLabelFor(input);
+        input.setAccessibleText(text);
         form.add(label, 0, row);
         form.add(input, 1, row);
     }

@@ -475,4 +475,41 @@ class DesktopInteractionTest {
             assertEquals(1, scroll.getVvalue());
         });
     }
+
+    @Test void coursePagesExposeAllRecordsAndSearchResetsToFirstPage() throws Exception {
+        for (int i = 0; i < 105; i++) service.createCourse("Paged course " + i, String.format("PAGE%03d", i));
+        fx(() -> {
+            Parent root = openApp("Courses");
+            assertTrue(hasText(root, "Showing 1–50 of 106"));
+            button(root, "Next page").fire(); assertTrue(hasText(root, "Showing 51–100 of 106"));
+            button(root, "Next page").fire(); assertTrue(hasText(root, "PAGE104"));
+            TextField search = nodes(root).stream().filter(TextField.class::isInstance).map(TextField.class::cast)
+                .filter(field -> "Search course code or name".equals(field.getAccessibleText())).findFirst().orElseThrow();
+            search.setText("no such course"); assertTrue(hasText(root, "No courses match"));
+            button(root, "Clear").fire(); assertTrue(hasText(root, "Showing 1–50 of 106"));
+        });
+    }
+    @Test void assignmentSessionAndSearchPagesKeepLongHistoryReachable() throws Exception {
+        for (int i = 0; i < 60; i++) {
+            service.createAssignment(course.getId(),String.format("Task%03d",i),"",LocalDate.now().plusDays(7).atTime(12,0).plusMinutes(i),Assignment.Priority.MEDIUM);
+            service.recordStudySession(course.getId(),LocalDate.now().atTime(10,0).plusMinutes(i),30,String.format("Session%03d",i));
+        }
+        fx(() -> {
+            Parent root = openApp("Assignments"); assertTrue(hasText(root,"Showing 1–50 of 60"));
+            button(root,"Next page").fire(); assertTrue(hasText(root,"Task059"));
+            button(root,"Study Sessions").fire(); root.applyCss(); root.layout();
+            assertTrue(hasText(root,"Showing 1–50 of 60")); button(root,"Next page").fire(); assertTrue(hasText(root,"Session000"));
+            var search = new FindView(service,database); show(search);
+            assertTrue(hasText(search,"Showing 1–50 of 121")); button(search,"Next page").fire(); assertTrue(hasText(search,"Showing 51–100 of 121"));
+        });
+    }
+    @Test void gradesHaveTextAlternativesAndPagedAssessmentHistory() throws Exception {
+        for (int i = 0; i < 55; i++) service.saveAcademicGrade(new AcademicGrade(0,course.getId(),"Assessment " + i,80,100,1));
+        fx(() -> {
+            var view = new GradesView(service); show(view);
+            assertTrue(hasText(view,"MAT101 80.0%")); assertTrue(hasText(view,"Showing 1–50 of 55"));
+            button(view,"Next page").fire(); assertTrue(hasText(view,"Showing 51–55 of 55"));
+            assertTrue(hasText(view,"Assessment 0"));
+        });
+    }
 }

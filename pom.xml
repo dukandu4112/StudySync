@@ -9,7 +9,7 @@
 
     <groupId>com.studysync</groupId>
     <artifactId>studysync</artifactId>
-    <version>3.0.0-rc.4</version>
+    <version>3.0.0</version>
 
     <name>StudySync</name>
     <description>

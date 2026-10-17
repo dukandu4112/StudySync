@@ -7,7 +7,7 @@ New-Item -ItemType Directory -Force $qaRoot | Out-Null
 $database = Join-Path $qaRoot "live.db"
 $backup = Join-Path $qaRoot "backup.db"
 $report = Join-Path $qaRoot "report.csv"
-$jar = "target/studysync-3.0.0-rc.4-all.jar"
+$jar = "target/studysync-3.0.0-all.jar"
 function Fixture([string]$mode) {
     & java -cp $jar scripts/NativeDataFixture.java $mode $database
     if ($LASTEXITCODE -ne 0) { throw "Fixture validation failed: $mode" }
@@ -44,6 +44,8 @@ try {
     Write-Host "Interactive desktop: $([Environment]::UserInteractive)"
     Wait-Window "StudySync 3.0"
     Send "^9"
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-accessibility.ps1
+    if ($LASTEXITCODE -ne 0) { throw "Windows accessibility metadata checks failed" }
     Send "%b"
     Select-Path "Create backup" $backup
     Wait-File $backup

@@ -1,3 +1,12 @@
+# 3.0.0
+
+- Complete the established desktop productivity scope with verified native file workflows and legacy upgrades.
+- Add 50-row paging for long course, assignment, session, grade, and search histories.
+- Add text alternatives for weighted course-grade charts and clearer accessible field names.
+- Verify larger multi-year histories across 100 repeated mutation/backup/restore/reopen cycles.
+- Audit Windows accessibility names, roles, and keyboard-focus metadata.
+- Package Windows ZIP/Linux TAR.GZ downloads and publish checksums through the stable release workflow.
+
 # 3.0.0-rc.4
 
 - Add Ctrl+1 through Ctrl+9 page shortcuts and Alt+B/R/E data-action mnemonics.

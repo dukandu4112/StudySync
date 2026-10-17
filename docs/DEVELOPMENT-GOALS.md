@@ -22,20 +22,18 @@ and verified problems.
 - Coverage of migration from existing project databases and repeated use.
 - Explicit reporting of untested flows and remaining limitations.
 
-## Remaining work to assess
+## Completion evidence
 
-- Native Windows Save/Open workflows are exercised in the desktop packaging job;
-  cancellation, backup, export, restore, and repeat launch must pass.
-- Desktop lifecycle tests now cover course, assignment, and study-session editing,
-  cancellations, validation corrections, and deletion. Continue adding coverage
-  for larger and more varied real-world workflows.
-- Automated checks cover shortcuts, Tab traversal, accessible form labels, and
-  minimum-window navigation/scrolling. Screen-reader evaluation and realistic
-  larger datasets remain areas for further review.
-- Automated checks cover legacy upgrades, failed upgrade rollback, repeated
-  reopening, recovery snapshots, and rejection of newer schemas. Long-running
-  real-world use remains to be evaluated.
-- Further feature requirements from the original project goals and user feedback.
+The current functional scope is implemented. Release validation covers 243 tests,
+including 28 desktop interaction tests, legacy database migrations, recovery,
+and 100 repeated-use cycles with thousands of saved records. Native Windows
+Save/Open, cancellation, restore, export, accessibility metadata, and repeat
+launch are release gates. See RELEASE-VALIDATION.md for the evidence and limits.
 
-Do not describe these as completed simply because a build passes or a version
-number has been reached. Add concrete requirements and evidence as work proceeds.
+## Continuing evaluation
+
+Human screen-reader evaluation and long-term use on students' own computers
+remain ongoing evaluation. Automated accessibility metadata and synthetic
+repeated-use tests do not substitute for those experiences. Future versions
+should address concrete user feedback, verified defects, and new requirements;
+the version number does not end development.

@@ -34,13 +34,22 @@ public class StudySyncService {
     public List<AcademicGrade> getAcademicGrades() { return databaseManager.getAcademicGrades(); }
     public void saveAcademicGrade(AcademicGrade grade) { requireCourse(grade.courseId()); databaseManager.saveAcademicGrade(grade); }
     public void deleteAcademicGrade(int id) { databaseManager.deleteAcademicGrade(id); }
+
+    public java.util.Map<Integer, Double> getCourseGradePercentages() {
+        var grouped = getAcademicGrades().stream().collect(Collectors.groupingBy(AcademicGrade::courseId));
+        java.util.Map<Integer, Double> result = new java.util.HashMap<>();
+        grouped.forEach((courseId, grades) -> {
+            double maxWeight = grades.stream().mapToDouble(AcademicGrade::weight).max().orElseThrow();
+            double total = grades.stream().mapToDouble(g -> g.percentage() * (g.weight() / maxWeight)).sum();
+            double weights = grades.stream().mapToDouble(g -> g.weight() / maxWeight).sum();
+            result.put(courseId, total / weights);
+        });
+        return java.util.Map.copyOf(result);
+    }
     public java.util.OptionalDouble getCourseGradePercentage(int courseId) {
         requireCourse(courseId);
-        var grades = getAcademicGrades().stream().filter(g -> g.courseId() == courseId).toList();
-        if (grades.isEmpty()) return java.util.OptionalDouble.empty();
-        double maxWeight = grades.stream().mapToDouble(AcademicGrade::weight).max().orElseThrow();
-        double weighted = grades.stream().mapToDouble(g -> g.percentage() * (g.weight() / maxWeight)).sum();
-        double normalized = grades.stream().mapToDouble(g -> g.weight() / maxWeight).sum();
-        return java.util.OptionalDouble.of(weighted / normalized);
+        Double value = getCourseGradePercentages().get(courseId);
+        return value == null ? java.util.OptionalDouble.empty() : java.util.OptionalDouble.of(value);
     }
+
 }

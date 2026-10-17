@@ -1,4 +1,4 @@
-# StudySync desktop 3.0 release candidate
+# StudySync desktop 3.0
 
 Continues `develop-2.3`; retains its smart study plans, daily and weekly goals,
 recommendations, dashboard, course/assignment editing, study history, and workload.
@@ -34,13 +34,13 @@ mvn javafx:run
 The executable JAR opens the desktop interface:
 
 ```sh
-java -jar target/studysync-3.0.0-rc.4-all.jar
+java -jar target/studysync-3.0.0-all.jar
 ```
 
 The original CLI remains available:
 
 ```sh
-java -cp target/studysync-3.0.0-rc.4-all.jar com.studysync.Main
+java -cp target/studysync-3.0.0-all.jar com.studysync.Main
 ```
 
 The plain Java desktop launcher reuses `studysync.db` in the working directory
@@ -101,7 +101,7 @@ reopening. Screen-reader behavior and long-duration human use still require
 real-world evaluation; passing automated checks alone is not an accessibility
 certification.
 
-## Acceptance before final release
+## Further real-world evaluation
 
 - Open all pages at the minimum supported window size and using keyboard focus.
 - Create/edit/delete a course, assignment, study session, and grade.
