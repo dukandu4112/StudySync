@@ -20,7 +20,7 @@ recommendations, dashboard, course/assignment editing, study history, and worklo
 - 2.9: schema migration without replacing old tables, query indexes, finite grade
   validation, CSV formula protection, and backup/restore regression tests.
 - 3.0: executable desktop JAR and native app-image packaging scripts, release
-  candidate documentation. Final release awaits platform acceptance.
+  documentation, native Windows workflow validation, and stable download archives.
 
 ## Run
 
@@ -55,7 +55,7 @@ instances during a restore.
 Build on the target OS with a JDK that includes `jpackage`:
 
 - Windows: `powershell -ExecutionPolicy Bypass -File scripts/package-desktop.ps1`
-- Linux/macOS: `bash scripts/package-desktop.sh`
+- Linux: `bash scripts/package-desktop.sh`
 
 Output: `target/desktop/StudySync` (or the OS's corresponding app bundle).
 An app-image includes Java and opens via its launcher; no separate JDK is
@@ -111,5 +111,5 @@ certification.
 - Export quoted/newline-containing input and inspect the CSV in a spreadsheet.
 - Build and launch the native Windows app image on the intended Windows PC.
 
-The release candidate must not be described as a verified Windows release
-until those Windows checks have been completed.
+Automated native Windows workflow checks are release gates. Evaluation on each
+student's own computer remains useful after release.

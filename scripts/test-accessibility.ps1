@@ -21,8 +21,17 @@ $checks = @(
 )
 foreach ($check in $checks) {
     $condition = [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::NameProperty, $check.Name)
-    $control = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
-    if (-not $control) { throw "Missing accessible control: $($check.Name)" }
+    $control = $null
+    for ($attempt = 0; $attempt -lt 40; $attempt++) {
+        $control = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
+        if ($control) { break }
+        Start-Sleep -Milliseconds 250
+    }
+    if (-not $control) {
+        $nodes = $window.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+        foreach ($node in $nodes) { Write-Host "ACCESSIBILITY NODE: $($node.Current.Name) | $($node.Current.ControlType.ProgrammaticName)" }
+        throw "Missing accessible control: $($check.Name)"
+    }
     if ($control.Current.ControlType -ne $check.Type) { throw "Incorrect accessible role: $($check.Name)" }
     if (-not $control.Current.IsKeyboardFocusable) { throw "Control is not keyboard focusable: $($check.Name)" }
     Write-Host "PASS accessibility: $($check.Name), $($control.Current.ControlType.ProgrammaticName), keyboard focusable"
