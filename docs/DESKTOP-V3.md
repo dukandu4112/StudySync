@@ -34,13 +34,13 @@ mvn javafx:run
 The executable JAR opens the desktop interface:
 
 ```sh
-java -jar target/studysync-3.0.0-rc.2-all.jar
+java -jar target/studysync-3.0.0-rc.3-all.jar
 ```
 
 The original CLI remains available:
 
 ```sh
-java -cp target/studysync-3.0.0-rc.2-all.jar com.studysync.Main
+java -cp target/studysync-3.0.0-rc.3-all.jar com.studysync.Main
 ```
 
 The plain Java desktop launcher reuses `studysync.db` in the working directory
@@ -70,7 +70,9 @@ mvn -Pdesktop-qa clean verify
 ```
 
 This opt-in profile uses a test-only headless JavaFX backend. It clicks real
-controls and checks the SQLite results. It covers grade create/edit/validation,
+controls and checks the SQLite results. It covers course create/edit/duplicate validation/cascade deletion, assignment
+create/edit/complete/reopen/delete, session create/edit/delete, correcting invalid
+forms, typed-date validation and persistence, grade create/edit/validation,
 delete/cancel confirmation, clear-edit behavior, calendar complete/reopen and
 month/leap-date navigation, preference persistence, and search/clear. CI and
 native packaging run this profile automatically. The native file chooser itself

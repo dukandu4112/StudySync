@@ -23,9 +23,15 @@ public class StudySyncApplication extends Application {
     private final VBox navigation = new VBox(8);
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("MMM d, yyyy h:mm a");
 
+    public StudySyncApplication() { }
+
+    StudySyncApplication(DatabaseManager database) {
+        this.database = java.util.Objects.requireNonNull(database);
+    }
+
     @Override
     public void start(Stage stage) {
-        database = new DatabaseManager();
+        if (database == null) database = new DatabaseManager();
         service = new StudySyncService(database);
         root = new BorderPane();
         root.getStyleClass().add("app-root");
@@ -101,10 +107,8 @@ public class StudySyncApplication extends Application {
         name.setPromptText("e.g. Data Structures & Algorithms");
         Button add = primary("Add Course");
         GridPane form = formGrid();
-        form.add(new Label("Course Code"), 0, 0);
-        form.add(code, 1, 0);
-        form.add(new Label("Course Name"), 0, 1);
-        form.add(name, 1, 1);
+        addFormField(form, "Course Code", code, 0);
+        addFormField(form, "Course Name", name, 1);
         form.add(add, 1, 2);
         TextField search = new TextField();
         search.setPromptText("Search course code or name");
@@ -169,10 +173,8 @@ public class StudySyncApplication extends Application {
         TextField code = new TextField(course.getCode());
         TextField name = new TextField(course.getName());
         GridPane form = formGrid();
-        form.add(new Label("Course Code"), 0, 0);
-        form.add(code, 1, 0);
-        form.add(new Label("Course Name"), 0, 1);
-        form.add(name, 1, 1);
+        addFormField(form, "Course Code", code, 0);
+        addFormField(form, "Course Name", name, 1);
         dialog.getDialogPane().setContent(form);
         boolean[] saved = {false};
         Node okButton = dialog.getDialogPane().lookupButton(ButtonType.OK);
@@ -196,7 +198,7 @@ public class StudySyncApplication extends Application {
 
     private void deleteCourse(Course course, VBox list, String query) {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Deleting \"" + course.getCode() + " - " + course.getName() + "\" also permanently removes its assignments and study sessions.",
+                "Deleting \"" + course.getCode() + " - " + course.getName() + "\" also permanently removes its assignments, study sessions, and grades.",
                 ButtonType.OK, ButtonType.CANCEL);
         confirm.setHeaderText("Delete course and related data?");
         confirm.showAndWait().filter(ButtonType.OK::equals).ifPresent(result -> {
@@ -234,8 +236,7 @@ public class StudySyncApplication extends Application {
         String[] labels = {"Course", "Title", "Description", "Due Date", "Due Time", "Priority"};
         Node[] inputs = {course, title, description, date, time, priority};
         for (int i = 0; i < labels.length; i++) {
-            form.add(new Label(labels[i]), 0, i);
-            form.add(inputs[i], 1, i);
+            addFormField(form, labels[i], inputs[i], i);
         }
         form.add(add, 1, 6);
         TextField search = new TextField();
@@ -262,7 +263,7 @@ public class StudySyncApplication extends Application {
                 return;
             }
             try {
-                LocalDateTime due = UiSupport.parseDateTime(date.getValue(), time.getText());
+                LocalDateTime due = UiSupport.parseDateTime(readDate(date), time.getText());
                 service.createAssignment(course.getValue().getId(), title.getText().trim(), description.getText().trim(), due, priority.getValue());
                 title.clear();
                 description.clear();
@@ -358,8 +359,7 @@ public class StudySyncApplication extends Application {
         String[] labels = {"Course", "Title", "Description", "Due Date", "Due Time", "Priority"};
         Node[] inputs = {course, title, description, date, time, priority};
         for (int i = 0; i < labels.length; i++) {
-            form.add(new Label(labels[i]), 0, i);
-            form.add(inputs[i], 1, i);
+            addFormField(form, labels[i], inputs[i], i);
         }
         dialog.getDialogPane().setContent(form);
         boolean[] saved = {false};
@@ -371,7 +371,7 @@ public class StudySyncApplication extends Application {
                 return;
             }
             try {
-                LocalDateTime due = UiSupport.parseDateTime(date.getValue(), time.getText());
+                LocalDateTime due = UiSupport.parseDateTime(readDate(date), time.getText());
                 service.updateAssignment(assignment.getId(), course.getValue().getId(), title.getText().trim(), description.getText().trim(), due, priority.getValue());
                 saved[0] = true;
             } catch (RuntimeException exception) {
@@ -404,8 +404,7 @@ public class StudySyncApplication extends Application {
         String[] labels = {"Course", "Date", "Start Time", "Minutes", "Notes"};
         Node[] inputs = {course, date, time, minutes, notes};
         for (int i = 0; i < labels.length; i++) {
-            form.add(new Label(labels[i]), 0, i);
-            form.add(inputs[i], 1, i);
+            addFormField(form, labels[i], inputs[i], i);
         }
         form.add(add, 1, 5);
         TextField search = new TextField();
@@ -429,8 +428,8 @@ public class StudySyncApplication extends Application {
         });
         add.setOnAction(event -> {
             try {
-                int duration = Integer.parseInt(minutes.getText().trim());
-                LocalDateTime start = UiSupport.parseDateTime(date.getValue(), time.getText());
+                int duration = UiSupport.parsePositiveMinutes(minutes.getText());
+                LocalDateTime start = UiSupport.parseDateTime(readDate(date), time.getText());
                 service.recordStudySession(course.getValue().getId(), start, duration, notes.getText().trim());
                 notes.clear();
                 refresh.run();
@@ -501,16 +500,15 @@ public class StudySyncApplication extends Application {
         String[] labels = {"Course", "Date", "Start Time", "Minutes", "Notes"};
         Node[] inputs = {course, date, time, minutes, notes};
         for (int i = 0; i < labels.length; i++) {
-            form.add(new Label(labels[i]), 0, i);
-            form.add(inputs[i], 1, i);
+            addFormField(form, labels[i], inputs[i], i);
         }
         dialog.getDialogPane().setContent(form);
         boolean[] saved = {false};
         Node okButton = dialog.getDialogPane().lookupButton(ButtonType.OK);
         okButton.addEventFilter(ActionEvent.ACTION, event -> {
             try {
-                int duration = Integer.parseInt(minutes.getText().trim());
-                LocalDateTime start = UiSupport.parseDateTime(date.getValue(), time.getText());
+                int duration = UiSupport.parsePositiveMinutes(minutes.getText());
+                LocalDateTime start = UiSupport.parseDateTime(readDate(date), time.getText());
                 service.updateStudySession(session.getId(), course.getValue().getId(), start, duration, notes.getText().trim());
                 saved[0] = true;
             } catch (RuntimeException exception) {
@@ -566,6 +564,23 @@ public class StudySyncApplication extends Application {
         card.setPadding(new Insets(18));
         card.getStyleClass().add("card");
         return card;
+    }
+
+    private LocalDate readDate(DatePicker picker) {
+        try {
+            LocalDate date = picker.getConverter().fromString(picker.getEditor().getText());
+            picker.setValue(date);
+            return date;
+        } catch (java.time.DateTimeException exception) {
+            throw new IllegalArgumentException("Enter a valid date or choose one from the calendar.");
+        }
+    }
+
+    private void addFormField(GridPane form, String text, Node input, int row) {
+        Label label = new Label(text);
+        label.setLabelFor(input);
+        form.add(label, 0, row);
+        form.add(input, 1, row);
     }
 
     private GridPane formGrid() {

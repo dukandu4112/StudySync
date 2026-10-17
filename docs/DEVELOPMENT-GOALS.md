@@ -25,7 +25,9 @@ and verified problems.
 ## Remaining work to assess
 
 - Full native file-chooser backup/restore/export workflows.
-- End-to-end course/assignment/study-session editing through the desktop UI.
+- Desktop lifecycle tests now cover course, assignment, and study-session editing,
+  cancellations, validation corrections, and deletion. Continue adding coverage
+  for larger and more varied real-world workflows.
 - Resizing, keyboard-only navigation, accessibility, and realistic larger datasets.
 - Long-running use, repeat-launch persistence, and upgrade recovery.
 - Further feature requirements from the original project goals and user feedback.

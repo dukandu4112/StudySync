@@ -1,3 +1,11 @@
+# 3.0.0-rc.3
+
+- Commit typed dates before saving assignment and study-session forms, including edit dialogs; reject invalid dates instead of silently using the old date.
+- Include assessment grades in the course-deletion warning.
+- Associate all core form labels with their controls for accessibility.
+- Use clear duration-validation messages in session forms.
+- Expand desktop interaction coverage to course create/edit/duplicate validation/cascading deletion, assignment lifecycle and correction, study-session lifecycle and correction, and typed-date creation/editing.
+
 # 3.0.0-rc.2
 
 - Fixed calendar month navigation keeping the agenda on an off-screen date; month-end navigation now clamps safely, including leap years.

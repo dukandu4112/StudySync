@@ -181,4 +181,211 @@ class DesktopInteractionTest {
             assertTrue(hasText(view, "Agenda — 2028-01-31"));
         });
     }
+
+    private Parent openApp(String page) {
+        new StudySyncApplication(database).start(stage);
+        Parent root = stage.getScene().getRoot();
+        button(root, page).fire(); root.applyCss(); root.layout();
+        return root;
+    }
+    private static <T extends Node> T field(Parent root, String label, Class<T> type) {
+        return nodes(root).stream().filter(Label.class::isInstance).map(Label.class::cast)
+            .filter(l -> l.getText().equals(label) && type.isInstance(l.getLabelFor()))
+            .map(l -> type.cast(l.getLabelFor())).findFirst().orElseThrow(() -> new AssertionError("Missing field: " + label));
+    }
+    private static void dialog(java.util.function.Consumer<DialogPane> action, Runnable trigger) {
+        var failure = new java.util.concurrent.atomic.AtomicReference<Throwable>();
+        Platform.runLater(() -> {
+            DialogPane pane = Window.getWindows().stream().filter(Window::isShowing)
+                .map(Window::getScene).filter(java.util.Objects::nonNull).map(Scene::getRoot)
+                .filter(DialogPane.class::isInstance).map(DialogPane.class::cast).reduce((a,b) -> b).orElse(null);
+            try {
+                assertNotNull(pane, "Expected a desktop dialog");
+                action.accept(pane);
+            } catch (Throwable t) {
+                failure.set(t);
+                if (pane != null) {
+                    Node cancel = pane.lookupButton(ButtonType.CANCEL);
+                    if (cancel == null) cancel = pane.lookupButton(ButtonType.OK);
+                    if (cancel instanceof Button close) close.fire();
+                }
+            }
+        });
+        trigger.run();
+        if (failure.get() != null) throw new AssertionError("Dialog interaction failed", failure.get());
+    }
+    private static void respond(DialogPane pane, ButtonType answer) { ((Button)pane.lookupButton(answer)).fire(); }
+
+    @Test void courseCreateRenameAndCancelledEditPersistCorrectly() throws Exception {
+        fx(() -> {
+            Parent root = openApp("Courses");
+            field(root, "Course Code", TextField.class).setText("CS101");
+            field(root, "Course Name", TextField.class).setText("Computer Science");
+            button(root, "Add Course").fire();
+            assertEquals(2, service.getCourses().size());
+            dialog(pane -> {
+                field(pane, "Course Name", TextField.class).setText("Programming");
+                respond(pane, ButtonType.OK);
+            }, () -> button(root, "Edit").fire());
+            assertTrue(service.getCourses().stream().anyMatch(c -> c.getName().equals("Programming")));
+            dialog(pane -> {
+                field(pane, "Course Name", TextField.class).setText("Discard me"); respond(pane, ButtonType.CANCEL);
+            }, () -> button(root, "Edit").fire());
+            assertFalse(service.getCourses().stream().anyMatch(c -> c.getName().equals("Discard me")));
+        });
+    }
+    @Test void duplicateCourseShowsErrorAndKeepsForm() throws Exception {
+        fx(() -> {
+            Parent root = openApp("Courses");
+            field(root, "Course Code", TextField.class).setText("mat101");
+            field(root, "Course Name", TextField.class).setText("Duplicate");
+            dialog(pane -> respond(pane, ButtonType.OK), () -> button(root, "Add Course").fire());
+            assertEquals(1, service.getCourses().size());
+            assertEquals("Duplicate", field(root, "Course Name", TextField.class).getText());
+        });
+    }
+    @Test void courseDeletionWarnsAboutGradesAndCascadesOnlyAfterConfirmation() throws Exception {
+        service.createAssignment(course.getId(), "Task", "", LocalDate.now().plusDays(1).atStartOfDay(), Assignment.Priority.HIGH);
+        service.recordStudySession(course.getId(), LocalDate.now().atTime(10,0), 20, "Notes");
+        service.saveAcademicGrade(new AcademicGrade(0, course.getId(), "Exam", 90, 100, 1));
+        fx(() -> {
+            Parent root = openApp("Courses");
+            dialog(pane -> respond(pane, ButtonType.CANCEL), () -> button(root, "Delete").fire());
+            assertEquals(1, service.getCourses().size()); assertEquals(1, service.getAcademicGrades().size());
+            dialog(pane -> {
+                assertTrue(pane.getContentText().contains("grades"), "Deletion warning must mention assessment grades");
+                respond(pane, ButtonType.OK);
+            }, () -> button(root, "Delete").fire());
+            assertTrue(service.getCourses().isEmpty()); assertTrue(service.getAssignments().isEmpty());
+            assertTrue(service.getStudySessions().isEmpty()); assertTrue(service.getAcademicGrades().isEmpty());
+        });
+    }
+    @Test void assignmentCreateEditCompleteReopenAndDeleteUseSameRecord() throws Exception {
+        fx(() -> {
+            Parent root = openApp("Assignments");
+            field(root, "Title", TextField.class).setText("Project"); button(root, "Add Assignment").fire();
+            int id = service.getAssignments().get(0).getId();
+            dialog(pane -> {
+                field(pane, "Title", TextField.class).setText("Revised project");
+                field(pane, "Due Time", TextField.class).setText("14:30"); respond(pane, ButtonType.OK);
+            }, () -> button(root, "Edit").fire());
+            assertEquals(id, service.getAssignments().get(0).getId());
+            assertEquals("Revised project", service.getAssignments().get(0).getTitle());
+            assertEquals(java.time.LocalTime.of(14,30), service.getAssignments().get(0).getDueDate().toLocalTime());
+            button(root, "Complete").fire(); assertTrue(service.getAssignments().get(0).isCompleted());
+            button(root, "Reopen").fire(); assertFalse(service.getAssignments().get(0).isCompleted());
+            dialog(pane -> respond(pane, ButtonType.CANCEL), () -> button(root, "Delete").fire());
+            assertEquals(1, service.getAssignments().size());
+            dialog(pane -> respond(pane, ButtonType.OK), () -> button(root, "Delete").fire());
+            assertTrue(service.getAssignments().isEmpty());
+        });
+    }
+    @Test void invalidAssignmentEditRemainsOpenAndCanBeCorrected() throws Exception {
+        service.createAssignment(course.getId(), "Original", "", LocalDate.now().plusDays(1).atStartOfDay(), Assignment.Priority.MEDIUM);
+        fx(() -> {
+            Parent root = openApp("Assignments");
+            dialog(pane -> {
+                field(pane, "Title", TextField.class).setText("Corrected");
+                field(pane, "Due Time", TextField.class).setText("25:70");
+                dialog(error -> respond(error, ButtonType.OK), () -> respond(pane, ButtonType.OK));
+                assertTrue(pane.getScene().getWindow().isShowing());
+                assertEquals("Original", service.getAssignments().get(0).getTitle());
+                assertEquals("Corrected", field(pane, "Title", TextField.class).getText());
+                field(pane, "Due Time", TextField.class).setText("09:15"); respond(pane, ButtonType.OK);
+            }, () -> button(root, "Edit").fire());
+            assertEquals("Corrected", service.getAssignments().get(0).getTitle());
+        });
+    }
+    @Test void typedAssignmentDateIsSavedInsteadOfOldPickerValue() throws Exception {
+        fx(() -> {
+            Parent root = openApp("Assignments");
+            DatePicker date = field(root, "Due Date", DatePicker.class);
+            LocalDate desired = LocalDate.now().plusDays(20);
+            date.getEditor().setText(date.getConverter().toString(desired));
+            field(root, "Title", TextField.class).setText("Typed date"); button(root, "Add Assignment").fire();
+            assertEquals(desired, service.getAssignments().get(0).getDueDate().toLocalDate());
+            dialog(pane -> {
+                DatePicker editDate = field(pane, "Due Date", DatePicker.class);
+                editDate.getEditor().setText(editDate.getConverter().toString(desired.plusDays(1)));
+                respond(pane, ButtonType.OK);
+            }, () -> button(root, "Edit").fire());
+            assertEquals(desired.plusDays(1), service.getAssignments().get(0).getDueDate().toLocalDate());
+        });
+    }
+    @Test void studySessionCreateEditCancelAndDeletePersistCorrectly() throws Exception {
+        fx(() -> {
+            Parent root = openApp("Study Sessions");
+            field(root, "Minutes", TextField.class).setText("45");
+            field(root, "Notes", TextField.class).setText("Chapter one"); button(root, "Record Session").fire();
+            int id = service.getStudySessions().get(0).getId();
+            dialog(pane -> {
+                field(pane, "Minutes", TextField.class).setText("60");
+                field(pane, "Notes", TextField.class).setText("Revised notes"); respond(pane, ButtonType.OK);
+            }, () -> button(root, "Edit").fire());
+            assertEquals(id, service.getStudySessions().get(0).getId()); assertEquals(60, service.getTotalStudyMinutes());
+            dialog(pane -> {
+                field(pane, "Minutes", TextField.class).setText("100"); respond(pane, ButtonType.CANCEL);
+            }, () -> button(root, "Edit").fire());
+            assertEquals(60, service.getTotalStudyMinutes());
+            dialog(pane -> respond(pane, ButtonType.OK), () -> button(root, "Delete").fire());
+            assertTrue(service.getStudySessions().isEmpty());
+        });
+    }
+    @Test void invalidSessionDurationPreservesEditUntilCorrected() throws Exception {
+        service.recordStudySession(course.getId(), LocalDate.now().atTime(10,0), 30, "Original");
+        fx(() -> {
+            Parent root = openApp("Study Sessions");
+            dialog(pane -> {
+                field(pane, "Minutes", TextField.class).setText("0");
+                field(pane, "Notes", TextField.class).setText("Keep notes");
+                dialog(error -> respond(error, ButtonType.OK), () -> respond(pane, ButtonType.OK));
+                assertTrue(pane.getScene().getWindow().isShowing()); assertEquals(30, service.getTotalStudyMinutes());
+                field(pane, "Minutes", TextField.class).setText("25"); respond(pane, ButtonType.OK);
+            }, () -> button(root, "Edit").fire());
+            assertEquals(25, service.getTotalStudyMinutes());
+            assertEquals("Keep notes", service.getStudySessions().get(0).getNotes());
+        });
+    }
+
+    @Test void invalidTypedDateDoesNotSilentlySavePreviousDate() throws Exception {
+        fx(() -> {
+            Parent root = openApp("Assignments");
+            field(root, "Title", TextField.class).setText("Keep this title");
+            field(root, "Due Date", DatePicker.class).getEditor().setText("not-a-date");
+            dialog(error -> {
+                assertTrue(error.getContentText().contains("valid date")); respond(error, ButtonType.OK);
+            }, () -> button(root, "Add Assignment").fire());
+            assertTrue(service.getAssignments().isEmpty());
+            assertEquals("Keep this title", field(root, "Title", TextField.class).getText());
+        });
+    }
+    @Test void typedStudyDatesAreCommittedOnCreateAndEdit() throws Exception {
+        fx(() -> {
+            Parent root = openApp("Study Sessions");
+            LocalDate desired = LocalDate.now().minusDays(5);
+            DatePicker date = field(root, "Date", DatePicker.class);
+            date.getEditor().setText(date.getConverter().toString(desired));
+            button(root, "Record Session").fire();
+            assertEquals(desired, service.getStudySessions().get(0).getStartTime().toLocalDate());
+            dialog(pane -> {
+                DatePicker editDate = field(pane, "Date", DatePicker.class);
+                editDate.getEditor().setText(editDate.getConverter().toString(desired.plusDays(1)));
+                respond(pane, ButtonType.OK);
+            }, () -> button(root, "Edit").fire());
+            assertEquals(desired.plusDays(1), service.getStudySessions().get(0).getStartTime().toLocalDate());
+        });
+    }
+    @Test void invalidCourseEditKeepsDialogOpenAndAcceptsCorrection() throws Exception {
+        fx(() -> {
+            Parent root = openApp("Courses");
+            dialog(pane -> {
+                field(pane, "Course Name", TextField.class).setText("");
+                dialog(error -> respond(error, ButtonType.OK), () -> respond(pane, ButtonType.OK));
+                assertTrue(pane.getScene().getWindow().isShowing());
+                assertEquals("Mathematics", service.getCourses().get(0).getName());
+                field(pane, "Course Name", TextField.class).setText("Algebra"); respond(pane, ButtonType.OK);
+            }, () -> button(root, "Edit").fire());
+            assertEquals("Algebra", service.getCourses().get(0).getName());
+        });
+    }
 }
