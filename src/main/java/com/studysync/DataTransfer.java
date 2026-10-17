@@ -23,6 +23,15 @@ public final class DataTransfer {
     public void restore(Path source) throws SQLException, IOException {
         Path path = source.toAbsolutePath().normalize();
         if (!Files.isRegularFile(path)) throw new IOException("Select an existing StudySync database backup.");
+        try (Connection active = database.getConnection(); Statement statement = active.createStatement();
+             ResultSet databases = statement.executeQuery("PRAGMA database_list")) {
+            while (databases.next()) {
+                String file = databases.getString("file");
+                if ("main".equals(databases.getString("name")) && file != null && !file.isBlank()
+                        && Files.isSameFile(path, Path.of(file)))
+                    throw new IOException("This file is the active database. Select a separate backup to restore.");
+            }
+        }
         // Validate a read-only connection before touching the live database.
         try (Connection input = DriverManager.getConnection("jdbc:sqlite:" + path.toUri() + "?mode=ro"); Statement s = input.createStatement()) {
             try (ResultSet result = s.executeQuery("PRAGMA quick_check")) {
@@ -38,7 +47,7 @@ public final class DataTransfer {
             }
         }
         try (Connection c = database.getConnection(); PreparedStatement attach = c.prepareStatement("ATTACH DATABASE ? AS imported")) {
-            attach.setString(1, "file:" + path + "?mode=ro"); attach.execute();
+            attach.setString(1, path.toUri().toString() + "?mode=ro"); attach.execute();
             c.setAutoCommit(false);
             try (Statement s = c.createStatement()) {
                 s.executeUpdate("DELETE FROM academic_grades"); s.executeUpdate("DELETE FROM assignments");

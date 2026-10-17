@@ -68,4 +68,18 @@ class DesktopMilestonesTest {
         assertEquals(1, live.getAllCourses().size());
         assertEquals("ORG", live.getAllCourses().get(0).getCode());
     }
+
+    @Test void backupWithUriCharactersCanBeRestored() throws Exception {
+        var database = db("live.db"); database.addCourse("Original", "ORG");
+        var transfer = new DataTransfer(database);
+        Path backup = directory.resolve("backup #% data.db"); transfer.backup(backup);
+        database.deleteCourse(database.getAllCourses().get(0).getId());
+        transfer.restore(backup);
+        assertEquals("ORG", database.getAllCourses().get(0).getCode());
+    }
+    @Test void restoringTheLiveDatabaseIsRejectedWithoutChanges() throws Exception {
+        var database = db("live.db"); database.addCourse("Original", "ORG");
+        assertThrows(java.io.IOException.class, () -> new DataTransfer(database).restore(directory.resolve("live.db")));
+        assertEquals("ORG", database.getAllCourses().get(0).getCode());
+    }
 }

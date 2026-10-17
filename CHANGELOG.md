@@ -1,3 +1,12 @@
+# 3.0.0-rc.2
+
+- Fixed calendar month navigation keeping the agenda on an off-screen date; month-end navigation now clamps safely, including leap years.
+- Fixed backup restore for filenames containing URI characters such as # and %.
+- Reject restoring the active database with an actionable message; preserve existing data.
+- Save pre-restore recovery snapshots in ~/.studysync/recovery-backups.
+- Add nine automated JavaFX interaction tests for grade add/edit/validation/delete/cancel, calendar completion/reopening and leap-day navigation, settings persistence, and search.
+- Run desktop interaction checks in CI and native packaging builds.
+
 # 3.0.0-rc.1
 
 Desktop calendar, weighted assessment tracking and charts, unified search, in-app reminders, local data settings, SQLite backup/import with recovery snapshots, CSV reporting, accessible focus styles, desktop launcher and app-image scripts. See docs/DESKTOP-V3.md for scope and remaining acceptance.

@@ -2,7 +2,6 @@ package com.studysync;
 
 import java.io.File;
 import java.nio.file.*;
-import java.time.LocalDateTime;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
@@ -30,11 +29,11 @@ public final class DataSettingsView extends VBox {
             Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION, "Replace current data with this backup? A recovery backup will be created first. Backups must be created by this desktop version.", ButtonType.CANCEL, ButtonType.OK);
             if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
             action(() -> {
-                Path recovery = Files.createDirectories(Path.of("recovery-backups")).resolve("before-restore-" + java.util.UUID.randomUUID() + ".db");
+                Path recovery = Files.createDirectories(Path.of(System.getProperty("user.home"), ".studysync", "recovery-backups")).resolve("before-restore-" + java.util.UUID.randomUUID() + ".db");
                 transfer.backup(recovery); transfer.restore(file.toPath());
                 target.setText(Integer.toString(service.getDailyStudyTargetMinutes()));
                 reminders.setSelected(!"false".equals(database.getSetting("reminders_enabled")));
-            }, "Data restored. Open any page to see refreshed data. Recovery backup saved in recovery-backups.");
+            }, "Data restored. Open any page to see refreshed data. Recovery backup saved in your home folder under .studysync/recovery-backups.");
         });
         Button export = new Button("Export report to CSV"); export.setOnAction(e -> {
             File file = choose(true, "Export report", "studysync-report.csv", "*.csv");

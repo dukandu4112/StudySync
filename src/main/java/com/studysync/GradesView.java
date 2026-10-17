@@ -15,11 +15,12 @@ public final class GradesView extends VBox {
         getChildren().clear();
         ComboBox<Course> course = new ComboBox<>();
         course.getItems().setAll(service.getCourses());
-        course.setPromptText("Select course");
+        course.setPromptText("Select course"); course.setId("grade-course");
         TextField title = new TextField(); title.setPromptText("Assessment title");
         TextField earned = new TextField(); earned.setPromptText("Points earned");
         TextField possible = new TextField("100");
         TextField weight = new TextField("1");
+        title.setId("grade-title"); earned.setId("grade-earned"); possible.setId("grade-possible"); weight.setId("grade-weight");
         if (editing != null) {
             course.getItems().stream().filter(c -> c.getId() == editing.courseId()).findFirst().ifPresent(course::setValue);
             title.setText(editing.title()); earned.setText("" + editing.earned());
@@ -30,6 +31,7 @@ public final class GradesView extends VBox {
         javafx.scene.Node[] inputs = {course, title, earned, possible, weight};
         for (int i = 0; i < inputs.length; i++) { Label label = new Label(labels[i]); label.setLabelFor(inputs[i]); form.add(label, 0, i); form.add(inputs[i], 1, i); }
         Button save = new Button(editing == null ? "Add grade" : "Save changes");
+        save.setId("grade-save");
         save.setOnAction(e -> {
             try {
                 if (course.getValue() == null) throw new IllegalArgumentException("Select a course.");

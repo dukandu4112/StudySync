@@ -9,7 +9,7 @@
 
     <groupId>com.studysync</groupId>
     <artifactId>studysync</artifactId>
-    <version>3.0.0-rc.1</version>
+    <version>3.0.0-rc.2</version>
 
     <name>StudySync</name>
     <description>
@@ -107,4 +107,27 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>desktop-qa</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.testfx</groupId>
+                    <artifactId>openjfx-monocle</artifactId>
+                    <version>17.0.10</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <build><plugins><plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration><systemPropertyVariables>
+                    <desktop.tests>true</desktop.tests>
+                    <glass.platform>Monocle</glass.platform>
+                    <monocle.platform>Headless</monocle.platform>
+                    <prism.order>sw</prism.order>
+                </systemPropertyVariables></configuration>
+            </plugin></plugins></build>
+        </profile>
+    </profiles>
 </project>

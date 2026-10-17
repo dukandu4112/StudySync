@@ -22,4 +22,4 @@ jobs:
           cache: maven
 
       - name: Verify build and tests
-        run: mvn --batch-mode verify
+        run: mvn --batch-mode -Pdesktop-qa verify

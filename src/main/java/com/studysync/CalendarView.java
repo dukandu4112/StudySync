@@ -1,6 +1,7 @@
 package com.studysync;
 
 import java.time.LocalDate;
+import java.time.Clock;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import javafx.geometry.Insets;
@@ -9,14 +10,28 @@ import javafx.scene.layout.*;
 
 /** Month navigation and a date-specific agenda using existing assignment data. */
 public final class CalendarView extends VBox {
-    private YearMonth month = YearMonth.now();
-    private LocalDate selected = LocalDate.now();
+    private YearMonth month;
+    private LocalDate selected;
+    private final Clock clock;
     private final StudySyncService service;
 
     public CalendarView(StudySyncService service) {
+        this(service, Clock.systemDefaultZone());
+    }
+
+    CalendarView(StudySyncService service, Clock clock) {
         super(16);
-        this.service = service;
+        this.clock = java.util.Objects.requireNonNull(clock);
+        this.service = java.util.Objects.requireNonNull(service);
+        selected = LocalDate.now(clock);
+        month = YearMonth.from(selected);
         setPadding(new Insets(12));
+        render();
+    }
+
+    private void changeMonth(int direction) {
+        month = month.plusMonths(direction);
+        selected = month.atDay(Math.min(selected.getDayOfMonth(), month.lengthOfMonth()));
         render();
     }
 
@@ -25,9 +40,10 @@ public final class CalendarView extends VBox {
         Button previous = new Button("Previous month");
         Button next = new Button("Next month");
         Button today = new Button("Today");
-        previous.setOnAction(e -> { month = month.minusMonths(1); render(); });
-        next.setOnAction(e -> { month = month.plusMonths(1); render(); });
-        today.setOnAction(e -> { selected = LocalDate.now(); month = YearMonth.from(selected); render(); });
+        previous.setId("calendar-previous"); next.setId("calendar-next"); today.setId("calendar-today");
+        previous.setOnAction(e -> changeMonth(-1));
+        next.setOnAction(e -> changeMonth(1));
+        today.setOnAction(e -> { selected = LocalDate.now(clock); month = YearMonth.from(selected); render(); });
         getChildren().add(new HBox(12, previous, new Label(month.format(DateTimeFormatter.ofPattern("MMMM yyyy"))), next, today));
         GridPane grid = new GridPane();
         grid.setHgap(8);
@@ -47,6 +63,7 @@ public final class CalendarView extends VBox {
             Button button = new Button(day + (pending == 0 ? "" : "\n" + pending + " due"));
             button.setMaxWidth(Double.MAX_VALUE);
             button.setMinHeight(58);
+            button.setId("calendar-day-" + date);
             button.setAccessibleText(date + ", " + pending + " pending assignments");
             if (date.equals(selected)) button.setStyle("-fx-border-color: #2563eb; -fx-border-width: 2;");
             button.setOnAction(e -> { selected = date; render(); });
@@ -57,6 +74,7 @@ public final class CalendarView extends VBox {
         if (agenda.isEmpty()) getChildren().add(new Label("No assignments due on this date."));
         for (Assignment assignment : agenda) {
             CheckBox done = new CheckBox(assignment.getDueDate().toLocalTime() + " · " + assignment.getTitle() + " · " + assignment.getPriority());
+            done.setId("calendar-assignment-" + assignment.getId());
             done.setSelected(assignment.isCompleted());
             done.setOnAction(e -> {
                 try {
@@ -64,7 +82,8 @@ public final class CalendarView extends VBox {
                     else service.reopenAssignment(assignment.getId());
                     render();
                 } catch (RuntimeException ex) {
-                    done.setSelected(assignment.isCompleted());
+                    done.setId("calendar-assignment-" + assignment.getId());
+            done.setSelected(assignment.isCompleted());
                     new Alert(Alert.AlertType.ERROR, "Could not update assignment. " + ex.getMessage()).showAndWait();
                 }
             });
