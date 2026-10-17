@@ -9,7 +9,7 @@
 
     <groupId>com.studysync</groupId>
     <artifactId>studysync</artifactId>
-    <version>2.2.0</version>
+    <version>3.0.0-rc.1</version>
 
     <name>StudySync</name>
     <description>
@@ -76,7 +76,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.studysync.Main</mainClass>
+                            <mainClass>com.studysync.DesktopLauncher</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -98,7 +98,7 @@
                             <shadedClassifierName>all</shadedClassifierName>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.studysync.Main</mainClass>
+                                    <mainClass>com.studysync.DesktopLauncher</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

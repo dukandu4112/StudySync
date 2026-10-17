@@ -18,7 +18,7 @@ public class DatabaseManager {
     private static final String DEFAULT_DATABASE_URL = "jdbc:sqlite:studysync.db";
     private final String databaseUrl;
 
-    public DatabaseManager() { this(DEFAULT_DATABASE_URL); }
+    public DatabaseManager() { this(System.getProperty("studysync.database", DEFAULT_DATABASE_URL)); }
 
     public DatabaseManager(String databaseUrl) {
         if (databaseUrl == null || databaseUrl.isBlank()) throw new IllegalArgumentException("Database URL cannot be empty.");
@@ -39,6 +39,9 @@ public class DatabaseManager {
         String createSettingsTable = "CREATE TABLE IF NOT EXISTS app_settings (setting_key TEXT PRIMARY KEY, setting_value TEXT NOT NULL)";
         try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
             statement.execute(createCoursesTable); statement.execute(createAssignmentsTable); statement.execute(createStudySessionsTable); statement.execute(createSettingsTable);
+            statement.execute("CREATE TABLE IF NOT EXISTS academic_grades (id INTEGER PRIMARY KEY AUTOINCREMENT, course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE, title TEXT NOT NULL, earned REAL NOT NULL CHECK(earned >= 0), possible REAL NOT NULL CHECK(possible > 0 AND earned <= possible), weight REAL NOT NULL CHECK(weight > 0))");
+            statement.execute("CREATE INDEX IF NOT EXISTS assignments_course_due ON assignments(course_id, due_date)");
+            statement.execute("CREATE INDEX IF NOT EXISTS sessions_course_start ON study_sessions(course_id, start_time)");
         } catch (SQLException exception) { throw new IllegalStateException("Unable to initialize the StudySync database.", exception); }
     }
 
@@ -89,4 +92,32 @@ public class DatabaseManager {
     public boolean updateStudySession(int id,int courseId,LocalDateTime startTime,int durationMinutes,String notes){StudySession x=new StudySession(courseId,startTime,durationMinutes,notes);try(Connection c=getConnection();PreparedStatement s=c.prepareStatement("UPDATE study_sessions SET course_id=?,start_time=?,duration_minutes=?,notes=? WHERE id=?")){s.setInt(1,x.getCourseId());s.setString(2,x.getStartTime().toString());s.setInt(3,x.getDurationMinutes());s.setString(4,x.getNotes());s.setInt(5,id);return s.executeUpdate()>0;}catch(SQLException e){throw new IllegalStateException("Unable to update study session.",e);} }
     public boolean deleteStudySession(int id){try(Connection c=getConnection();PreparedStatement s=c.prepareStatement("DELETE FROM study_sessions WHERE id=?")){s.setInt(1,id);return s.executeUpdate()>0;}catch(SQLException e){throw new IllegalStateException("Unable to delete study session.",e);} }
     private StudySession mapStudySession(ResultSet r)throws SQLException{return new StudySession(r.getInt("id"),r.getInt("course_id"),LocalDateTime.parse(r.getString("start_time")),r.getInt("duration_minutes"),r.getString("notes"));}
+
+    public List<AcademicGrade> getAcademicGrades() {
+        List<AcademicGrade> grades = new ArrayList<>();
+        try (Connection c = getConnection(); Statement s = c.createStatement();
+             ResultSet r = s.executeQuery("SELECT * FROM academic_grades ORDER BY id DESC")) {
+            while (r.next()) grades.add(new AcademicGrade(r.getInt("id"), r.getInt("course_id"), r.getString("title"), r.getDouble("earned"), r.getDouble("possible"), r.getDouble("weight")));
+            return grades;
+        } catch (SQLException e) { throw new IllegalStateException("Unable to retrieve grades.", e); }
+    }
+
+    public void saveAcademicGrade(AcademicGrade grade) {
+        String sql = grade.id() == 0
+            ? "INSERT INTO academic_grades(course_id,title,earned,possible,weight) VALUES(?,?,?,?,?)"
+            : "UPDATE academic_grades SET course_id=?,title=?,earned=?,possible=?,weight=? WHERE id=?";
+        try (Connection c = getConnection(); PreparedStatement s = c.prepareStatement(sql)) {
+            s.setInt(1, grade.courseId()); s.setString(2, grade.title()); s.setDouble(3, grade.earned());
+            s.setDouble(4, grade.possible()); s.setDouble(5, grade.weight());
+            if (grade.id() != 0) s.setInt(6, grade.id());
+            if (s.executeUpdate() != 1) throw new IllegalArgumentException("Grade no longer exists.");
+        } catch (SQLException e) { throw new IllegalStateException("Unable to save grade.", e); }
+    }
+
+    public void deleteAcademicGrade(int id) {
+        try (Connection c = getConnection(); PreparedStatement s = c.prepareStatement("DELETE FROM academic_grades WHERE id=?")) {
+            s.setInt(1, id);
+            if (s.executeUpdate() != 1) throw new IllegalArgumentException("Grade no longer exists.");
+        } catch (SQLException e) { throw new IllegalStateException("Unable to delete grade.", e); }
+    }
 }

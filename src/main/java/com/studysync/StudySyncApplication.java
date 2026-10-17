@@ -15,16 +15,18 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
-/** JavaFX desktop entry point for StudySync 2.3. */
+/** JavaFX desktop entry point for StudySync 3.0 release candidate. */
 public class StudySyncApplication extends Application {
     private StudySyncService service;
+    private DatabaseManager database;
     private BorderPane root;
     private final VBox navigation = new VBox(8);
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("MMM d, yyyy h:mm a");
 
     @Override
     public void start(Stage stage) {
-        service = new StudySyncService(new DatabaseManager());
+        database = new DatabaseManager();
+        service = new StudySyncService(database);
         root = new BorderPane();
         root.getStyleClass().add("app-root");
         root.setTop(createHeader());
@@ -32,7 +34,7 @@ public class StudySyncApplication extends Application {
         showDashboard();
         Scene scene = new Scene(root, 1100, 700);
         scene.getStylesheets().add(getClass().getResource("/com/studysync/studysync.css").toExternalForm());
-        stage.setTitle("StudySync");
+        stage.setTitle("StudySync 3.0 — Release Candidate");
         stage.setMinWidth(900);
         stage.setMinHeight(600);
         stage.setScene(scene);
@@ -54,7 +56,11 @@ public class StudySyncApplication extends Application {
         Button assignments = navigationButton("Assignments", this::showAssignments);
         Button sessions = navigationButton("Study Sessions", this::showStudySessions);
         Button workload = navigationButton("Workload", this::showWorkload);
-        navigation.getChildren().setAll(dashboard, courses, assignments, sessions, workload);
+        Button calendar = navigationButton("Calendar", () -> setPage(pageContainer("Calendar", "Browse deadlines by month and complete work from your daily agenda.", new CalendarView(service))));
+        Button grades = navigationButton("Grades", () -> setPage(pageContainer("Grades", "Track assessment scores and weighted academic progress.", new GradesView(service))));
+        Button settings = navigationButton("Data & Settings", () -> setPage(pageContainer("Data & Settings", "Manage goals, reminders, backups, imports, and reports.", new DataSettingsView(database, service))));
+        Button find = navigationButton("Search & Alerts", () -> setPage(pageContainer("Search & Reminders", "Find your work and review upcoming deadlines. Reminders update when you open this page.", new FindView(service, database))));
+        navigation.getChildren().setAll(dashboard, courses, assignments, sessions, workload, calendar, grades, find, settings);
         setActiveNavigation(dashboard);
         navigation.setPadding(new Insets(24, 14, 24, 14));
         navigation.setPrefWidth(205);

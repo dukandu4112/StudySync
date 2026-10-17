@@ -1,3 +1,7 @@
+# 3.0.0-rc.1
+
+Desktop calendar, weighted assessment tracking and charts, unified search, in-app reminders, local data settings, SQLite backup/import with recovery snapshots, CSV reporting, accessible focus styles, desktop launcher and app-image scripts. See docs/DESKTOP-V3.md for scope and remaining acceptance.
+
 # Changelog
 
 All notable changes to StudySync are documented in this file.

@@ -2,9 +2,9 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ "main", "develop-2.3" ]
+    branches: [ "main", "develop-2.3", "feature/desktop-v3" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "develop-2.3" ]
 
 jobs:
   verify:
