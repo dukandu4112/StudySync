@@ -22,6 +22,7 @@ class DesktopMilestonesTest {
         service.deleteCourse(course.getId()); assertTrue(service.getAcademicGrades().isEmpty());
     }
     @Test void rejectsInvalidAndNonFiniteGrades() {
+        assertEquals(100, new AcademicGrade(0, 1, "Large values", 1e308, 1e308, 1).percentage());
         for (double value : new double[]{Double.NaN, Double.POSITIVE_INFINITY, -1, 101})
             assertThrows(IllegalArgumentException.class, () -> new AcademicGrade(0, 1, "Exam", value, 100, 1));
         assertThrows(IllegalArgumentException.class, () -> new AcademicGrade(0, 1, "Exam", 0, 0, 1));
@@ -34,7 +35,7 @@ class DesktopMilestonesTest {
         service.recordStudySession(c.getId(), LocalDateTime.of(2026, 10, 1, 12, 0), 30, "chapter");
         service.saveAcademicGrade(new AcademicGrade(0, c.getId(), "Lab", 8, 10, 1));
         service.setDailyStudyTargetMinutes(90);
-        Path backup = directory.resolve("backup.db"); transfer.backup(backup);
+        Path backup = directory.resolve("backup with spaces.db"); transfer.backup(backup);
         assertThrows(Exception.class, () -> transfer.backup(backup));
         service.deleteCourse(c.getId()); service.setDailyStudyTargetMinutes(10);
         transfer.restore(backup);

@@ -29,6 +29,15 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: bash scripts/package-desktop.sh
+      - name: Launch Windows app image
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $app = Start-Process target/desktop/StudySync/StudySync.exe -PassThru
+          Start-Sleep -Seconds 8
+          $app.Refresh()
+          if ($app.HasExited) { throw "Desktop app exited during startup ($($app.ExitCode))" }
+          Stop-Process -Id $app.Id
       - name: Upload desktop app image
         uses: actions/upload-artifact@v4
         with:
