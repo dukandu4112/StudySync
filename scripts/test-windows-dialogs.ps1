@@ -39,15 +39,9 @@ $app = $null
 try {
     Fixture "seed"
     $env:JAVA_TOOL_OPTIONS = "-Duser.home=$qaRoot -Dstudysync.database=jdbc:sqlite:$database -Djavafx.accessibility.force=true"
-    $app = Start-Process target/desktop/StudySync/StudySync.exe -PassThru
+    $app = Start-Process target/desktop/StudySync/StudySync.exe -PassThru -RedirectStandardOutput (Join-Path $qaRoot "app.stdout.log") -RedirectStandardError (Join-Path $qaRoot "app.stderr.log")
     $env:JAVA_TOOL_OPTIONS = $priorOptions
-    for ($attempt = 0; $attempt -lt 60; $attempt++) {
-        $app.Refresh()
-        if ($app.HasExited) { throw "Packaged application exited during startup" }
-        if ($app.MainWindowHandle -ne 0) { break }
-        Start-Sleep -Milliseconds 250
-    }
-    if ($app.MainWindowHandle -eq 0) { throw "No visible desktop window appeared" }
+    Write-Host "Interactive desktop: $([Environment]::UserInteractive)"
     Wait-Window "StudySync 3.0"
     Send "^9"
     Send "%b"
@@ -94,6 +88,11 @@ try {
     Wait-Window "StudySync 3.0"
     Fixture "original"
     Write-Host "PASS: packaged application reopens with restored data"
+} catch {
+    Get-Process | Where-Object { $_.ProcessName -match 'StudySync|java' } | Select-Object Id,ProcessName,MainWindowHandle,MainWindowTitle | Format-Table -AutoSize
+    Get-Content (Join-Path $qaRoot "app.stdout.log") -ErrorAction SilentlyContinue
+    Get-Content (Join-Path $qaRoot "app.stderr.log") -ErrorAction SilentlyContinue
+    throw
 } finally {
     $env:JAVA_TOOL_OPTIONS = $priorOptions
     if ($app -and -not $app.HasExited) { Stop-Process -Id $app.Id -ErrorAction SilentlyContinue }
