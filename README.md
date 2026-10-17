@@ -1,117 +1,75 @@
 # StudySync
 
-StudySync is a Java 17 student productivity desktop application for organizing courses, assignments, study sessions, deadlines, workload, and academic progress. StudySync 2.2 builds on the JavaFX desktop foundation with weekly study-progress analytics, ranked assignment planning, study streak tracking, and week-over-week study trends while preserving the reusable service, domain, SQLite persistence, automated tests, and original CLI architecture.
+StudySync is a Java desktop student-productivity application for courses,
+assignments, study sessions, deadlines, study planning, and academic progress.
 
-**Release candidate: 2.2.0**  
-**Latest stable release: 2.1.0**
+## Download and open
+
+Get the Windows ZIP or Linux TAR.GZ from
+[GitHub Releases](https://github.com/dukandu4112/StudySync/releases/latest).
+Extract the entire archive. Windows: open `StudySync/StudySync.exe`.
+Linux: run `StudySync/bin/StudySync` from the extracted directory.
+The desktop packages include Java; a separate JDK is not required.
+
+Release assets include `SHA256SUMS.txt` for download verification. Keep all files
+in the extracted application folder together.
 
 ## Features
 
-- JavaFX desktop interface with Dashboard, Courses, Assignments, Study Sessions, and Workload navigation
-- Create, edit, delete, search, and organize academic courses
-- Safely cascade course deletion to associated assignments and study sessions
-- Create, edit, complete, reopen, delete, search, and filter assignments
-- Track due dates, descriptions, priorities, completion status, and associated course codes
-- Rank pending assignments by urgency, priority, deadline, and assignment ID
-- Classify pending work as Overdue, Due Today, Due Soon, or Upcoming
-- Preview the five highest-ranked assignments directly on the dashboard with time-left/time-late context
-- Filter assignments by status and priority
-- Plan upcoming workload using 3, 7, 14, or 30-day windows
-- Review overdue assignments separately in the workload planner
-- Record, edit, delete, search, filter, and review study sessions
-- Filter study-session history by course and search study notes
-- Track total study time
-- Review weekly study progress from Monday through Sunday, including minutes, session count, active study days, longest session, and daily average
-- Track current and longest study streaks with last-study-day and continue/restart guidance
-- Compare this week's study time with the previous week using minute change, percentage change, and up/down/steady trend direction
-- View academic progress metrics for courses, assignments, overdue work, completion, and study time
-- Review planning insights for upcoming work, high-priority pending work, the nearest deadline, and the most-studied course
-- Persist application data locally with SQLite
-- Validate dates, times, durations, and form input with clear UI feedback
-- Keep edit dialogs open when validation fails so input can be corrected immediately
-- Preserve the original command-line interface
+- Course creation, editing, searching, and confirmed cascading deletion.
+- Assignment deadlines, priorities, editing, completion/reopening, filtering,
+  workload ranking, and a monthly calendar with a daily agenda.
+- Study-session history, weekly progress/trends, streaks, daily/course goals,
+  recommendations, and suggested study blocks.
+- Assessment grades with relative weights, course charts, and text alternatives.
+- Unified search, in-app deadline reminders, and persistent preferences.
+- Paged histories, keyboard navigation, local SQLite storage, CSV reports,
+  backup/import, pre-restore recovery snapshots, and compatible legacy upgrades.
 
-## Technology
+## Keyboard
 
-- Java 17
-- JavaFX 17
-- Maven
-- SQLite / sqlite-jdbc
-- JUnit 5
-- GitHub Actions
+Ctrl+1 through Ctrl+9 open pages in navigation order. In Data & Settings,
+Alt+B opens backup, Alt+R opens restore, and Alt+E opens export. Tab moves
+between controls; Escape cancels dialogs.
 
-## Architecture
+## Data and upgrades
 
-StudySync separates the user interface from reusable application logic:
+The desktop launcher reuses `studysync.db` in the working directory when one
+exists; otherwise it stores data at `~/.studysync/studysync.db`.
+Back up existing data before changing launch methods or upgrading.
+Recovery snapshots are stored at `~/.studysync/recovery-backups`.
+Compatible older databases upgrade transactionally; unsupported newer schemas
+are rejected without alteration. CSV exports are reports; database backups are
+the import/restore format. Reminder updates occur when their page is opened.
 
-```text
-src/
-├── main/java/com/studysync/
-│   ├── StudySyncApplication.java        # JavaFX desktop entry point
-│   ├── DashboardView.java               # 2.2 dashboard composition
-│   ├── StudyProgressView.java
-│   ├── StudyStreakView.java
-│   ├── StudyTrendView.java
-│   ├── AssignmentPlanView.java
-│   ├── UiSupport.java
-│   ├── Main.java                        # CLI entry point
-│   ├── StudySyncCli.java
-│   ├── StudySyncService.java
-│   ├── DatabaseManager.java
-│   ├── Course.java
-│   ├── Assignment.java
-│   ├── AssignmentPlanItem.java
-│   ├── StudySession.java
-│   ├── StudyStreak.java
-│   ├── StudyTrend.java
-│   ├── DashboardSummary.java
-│   ├── DashboardAnalytics.java
-│   └── StudyProgressAnalytics.java
-├── main/resources/com/studysync/
-│   └── studysync.css
-└── test/java/com/studysync/
-    └── unit, integration, service, lifecycle, analytics, planning, CLI, and UI-support tests
-```
+See [desktop guide](docs/DESKTOP-V3.md) and
+[release validation](docs/RELEASE-VALIDATION.md) for detail and test limitations.
 
-The JavaFX and CLI interfaces share the same service and persistence layers, keeping business logic out of the presentation layer and avoiding duplicated data-access code. See `docs/ARCHITECTURE.md` for the architecture guide.
+## Build from source
 
-## Build and Verify
+Requires JDK 17+ and Maven 3.6+:
 
-Requirements: JDK 17+ and Maven.
-
-```bash
-mvn clean verify
-```
-
-GitHub Actions runs `mvn --batch-mode verify` for pushes to `main` and `develop-2.2`, and for configured pull requests.
-
-## Run the JavaFX Desktop Application
-
-```bash
+```sh
+mvn -Pdesktop-qa clean verify
 mvn javafx:run
 ```
 
-StudySync creates `studysync.db` in the working directory and uses it for persistent local application data.
+Executable desktop JAR and original CLI:
 
-## Run the Original CLI
-
-The original CLI remains available as an alternate interface. For the 2.2 release candidate, the packaged all-dependencies JAR uses the finalized version:
-
-```bash
-mvn clean package
-java -jar target/studysync-2.2.0-all.jar
+```sh
+java -jar target/studysync-3.0.0-all.jar
+java -cp target/studysync-3.0.0-all.jar com.studysync.Main
 ```
 
-## Testing
+Build native packages on the target OS with `scripts/package-desktop.ps1`
+(Windows) or `scripts/package-desktop.sh` (Linux). Packages are OS-specific.
 
-StudySync uses automated tests across the domain, persistence, service, lifecycle, analytics, planning, CLI, and UI-support layers. Weekly progress calculations, assignment urgency/ranking behavior, study streak calculations, and weekly trend comparisons have dedicated automated coverage. JavaFX parsing and filtering logic remains extracted into pure helper code where appropriate so it can be verified in CI without requiring a graphical desktop session.
+## Project status
 
-## Version Status
+The v3.0.0 release implements the established desktop scope. Development is
+not capped at this version: new requirements and verified issues drive future
+releases. See [development goals](docs/DEVELOPMENT-GOALS.md).
 
-StudySync 2.2.0 is currently a release candidate on `develop-2.2`. The weekly study-progress, assignment-planning, study-streak, and weekly study-trend milestones are implemented and integrated into the enhanced desktop dashboard. The release-candidate commit must pass CI before promotion to `main`.
+## Author and license
 
-StudySync 2.1.0 remains the latest stable version on `main` and has an official GitHub Release tagged `v2.1.0`.
-
-## License
-
-This project is licensed under the MIT License.
+Daniel Ukandu (`dukandu4112`). MIT License; see [LICENSE](LICENSE).

@@ -96,6 +96,35 @@ public final class UiSupport {
                 .toList();
     }
 
+    /** Filters study sessions using the course-code labels shown by the JavaFX study-history view. */
+    public static List<StudySession> filterStudySessions(List<StudySession> sessions,
+            List<Course> courses, String query, String courseFilter) {
+        if (sessions == null) throw new IllegalArgumentException("Study sessions cannot be null.");
+        if (courses == null) throw new IllegalArgumentException("Courses cannot be null.");
+        String normalizedQuery = normalize(query);
+        String selectedCourse = courseFilter == null ? "All Courses" : courseFilter;
+
+        return sessions.stream()
+                .filter(session -> {
+                    Course course = findCourse(courses, session.getCourseId());
+                    return "All Courses".equals(selectedCourse)
+                            || (course != null && course.getCode().equals(selectedCourse));
+                })
+                .filter(session -> {
+                    if (normalizedQuery.isEmpty()) return true;
+                    Course course = findCourse(courses, session.getCourseId());
+                    return session.getNotes().toLowerCase(Locale.ROOT).contains(normalizedQuery)
+                            || (course != null && (course.getCode().toLowerCase(Locale.ROOT).contains(normalizedQuery)
+                            || course.getName().toLowerCase(Locale.ROOT).contains(normalizedQuery)));
+                })
+                .sorted(Comparator.comparing(StudySession::getStartTime).reversed())
+                .toList();
+    }
+
+    private static Course findCourse(List<Course> courses, int courseId) {
+        return courses.stream().filter(course -> course.getId() == courseId).findFirst().orElse(null);
+    }
+
     private static String normalize(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }

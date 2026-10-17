@@ -15,16 +15,24 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
-/** JavaFX desktop entry point for StudySync 2.2. */
+/** JavaFX desktop entry point for StudySync 3.0 release candidate. */
 public class StudySyncApplication extends Application {
     private StudySyncService service;
+    private DatabaseManager database;
     private BorderPane root;
     private final VBox navigation = new VBox(8);
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("MMM d, yyyy h:mm a");
 
+    public StudySyncApplication() { }
+
+    StudySyncApplication(DatabaseManager database) {
+        this.database = java.util.Objects.requireNonNull(database);
+    }
+
     @Override
     public void start(Stage stage) {
-        service = new StudySyncService(new DatabaseManager());
+        if (database == null) database = new DatabaseManager();
+        service = new StudySyncService(database);
         root = new BorderPane();
         root.getStyleClass().add("app-root");
         root.setTop(createHeader());
@@ -32,7 +40,15 @@ public class StudySyncApplication extends Application {
         showDashboard();
         Scene scene = new Scene(root, 1100, 700);
         scene.getStylesheets().add(getClass().getResource("/com/studysync/studysync.css").toExternalForm());
-        stage.setTitle("StudySync");
+        for (int index = 0; index < navigation.getChildren().size(); index++) {
+            Button button = (Button) navigation.getChildren().get(index);
+            String shortcut = "Ctrl+" + (index + 1);
+            button.setTooltip(new Tooltip(shortcut + " — " + button.getText()));
+            button.setAccessibleHelp("Open " + button.getText() + " using " + shortcut);
+            scene.getAccelerators().put(new javafx.scene.input.KeyCodeCombination(
+                    javafx.scene.input.KeyCode.valueOf("DIGIT" + (index + 1)), javafx.scene.input.KeyCombination.CONTROL_DOWN), button::fire);
+        }
+        stage.setTitle("StudySync 3.0.0");
         stage.setMinWidth(900);
         stage.setMinHeight(600);
         stage.setScene(scene);
@@ -54,7 +70,11 @@ public class StudySyncApplication extends Application {
         Button assignments = navigationButton("Assignments", this::showAssignments);
         Button sessions = navigationButton("Study Sessions", this::showStudySessions);
         Button workload = navigationButton("Workload", this::showWorkload);
-        navigation.getChildren().setAll(dashboard, courses, assignments, sessions, workload);
+        Button calendar = navigationButton("Calendar", () -> setPage(pageContainer("Calendar", "Browse deadlines by month and complete work from your daily agenda.", new CalendarView(service))));
+        Button grades = navigationButton("Grades", () -> setPage(pageContainer("Grades", "Track assessment scores and weighted academic progress.", new GradesView(service))));
+        Button settings = navigationButton("Data & Settings", () -> setPage(pageContainer("Data & Settings", "Manage goals, reminders, backups, imports, and reports.", new DataSettingsView(database, service))));
+        Button find = navigationButton("Search & Alerts", () -> setPage(pageContainer("Search & Reminders", "Find your work and review upcoming deadlines. Reminders update when you open this page.", new FindView(service, database))));
+        navigation.getChildren().setAll(dashboard, courses, assignments, sessions, workload, calendar, grades, find, settings);
         setActiveNavigation(dashboard);
         navigation.setPadding(new Insets(24, 14, 24, 14));
         navigation.setPrefWidth(205);
@@ -85,7 +105,7 @@ public class StudySyncApplication extends Application {
         setPage(pageContainer(
                 "Dashboard",
                 "A quick view of your courses, assignments, study progress, and planning priorities.",
-                DashboardView.create(service)));
+                DashboardView.create(service, this::showDashboard)));
     }
 
     private void showCourses() {
@@ -95,13 +115,12 @@ public class StudySyncApplication extends Application {
         name.setPromptText("e.g. Data Structures & Algorithms");
         Button add = primary("Add Course");
         GridPane form = formGrid();
-        form.add(new Label("Course Code"), 0, 0);
-        form.add(code, 1, 0);
-        form.add(new Label("Course Name"), 0, 1);
-        form.add(name, 1, 1);
+        addFormField(form, "Course Code", code, 0);
+        addFormField(form, "Course Name", name, 1);
         form.add(add, 1, 2);
         TextField search = new TextField();
         search.setPromptText("Search course code or name");
+        search.setAccessibleText("Search course code or name");
         Button clear = new Button("Clear");
         clear.getStyleClass().add("secondary-button");
         HBox tools = new HBox(10, search, clear);
@@ -131,12 +150,13 @@ public class StudySyncApplication extends Application {
 
     private void refreshCourseList(VBox list, String query) {
         List<Course> courses = UiSupport.filterCourses(service.getCourses(), query);
+        var page = DesktopPaging.slice(list, courses, query == null ? "" : query);
         list.getChildren().clear();
         if (courses.isEmpty()) {
             addEmpty(list, query == null || query.isBlank() ? "No courses yet. Add your first course above." : "No courses match your search.");
             return;
         }
-        for (Course course : courses) {
+        for (Course course : page.items()) {
             VBox details = new VBox(3, styledLabel(course.getCode(), "course-code"), styledLabel(course.getName(), "course-name"));
             HBox.setHgrow(details, Priority.ALWAYS);
             Button edit = new Button("Edit");
@@ -153,6 +173,7 @@ public class StudySyncApplication extends Application {
             row.getStyleClass().add("course-row");
             list.getChildren().add(row);
         }
+        DesktopPaging.controls(list, page, () -> refreshCourseList(list, query));
     }
 
     private boolean editCourse(Course course) {
@@ -163,10 +184,8 @@ public class StudySyncApplication extends Application {
         TextField code = new TextField(course.getCode());
         TextField name = new TextField(course.getName());
         GridPane form = formGrid();
-        form.add(new Label("Course Code"), 0, 0);
-        form.add(code, 1, 0);
-        form.add(new Label("Course Name"), 0, 1);
-        form.add(name, 1, 1);
+        addFormField(form, "Course Code", code, 0);
+        addFormField(form, "Course Name", name, 1);
         dialog.getDialogPane().setContent(form);
         boolean[] saved = {false};
         Node okButton = dialog.getDialogPane().lookupButton(ButtonType.OK);
@@ -190,7 +209,7 @@ public class StudySyncApplication extends Application {
 
     private void deleteCourse(Course course, VBox list, String query) {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Deleting \"" + course.getCode() + " - " + course.getName() + "\" also permanently removes its assignments and study sessions.",
+                "Deleting \"" + course.getCode() + " - " + course.getName() + "\" also permanently removes its assignments, study sessions, and grades.",
                 ButtonType.OK, ButtonType.CANCEL);
         confirm.setHeaderText("Delete course and related data?");
         confirm.showAndWait().filter(ButtonType.OK::equals).ifPresent(result -> {
@@ -228,14 +247,15 @@ public class StudySyncApplication extends Application {
         String[] labels = {"Course", "Title", "Description", "Due Date", "Due Time", "Priority"};
         Node[] inputs = {course, title, description, date, time, priority};
         for (int i = 0; i < labels.length; i++) {
-            form.add(new Label(labels[i]), 0, i);
-            form.add(inputs[i], 1, i);
+            addFormField(form, labels[i], inputs[i], i);
         }
         form.add(add, 1, 6);
         TextField search = new TextField();
         search.setPromptText("Search title or description");
+        search.setAccessibleText("Search title or description");
         ComboBox<String> filter = new ComboBox<>();
         filter.getItems().addAll("All", "Pending", "Completed", "Overdue", "High Priority", "Medium Priority", "Low Priority");
+        filter.setAccessibleText("Filter assignments by status or priority");
         filter.setValue("All");
         Button clear = new Button("Clear");
         clear.getStyleClass().add("secondary-button");
@@ -256,7 +276,7 @@ public class StudySyncApplication extends Application {
                 return;
             }
             try {
-                LocalDateTime due = UiSupport.parseDateTime(date.getValue(), time.getText());
+                LocalDateTime due = UiSupport.parseDateTime(readDate(date), time.getText());
                 service.createAssignment(course.getValue().getId(), title.getText().trim(), description.getText().trim(), due, priority.getValue());
                 title.clear();
                 description.clear();
@@ -277,12 +297,14 @@ public class StudySyncApplication extends Application {
         else if ("Medium Priority".equals(filter)) priority = "MEDIUM";
         else if ("Low Priority".equals(filter)) priority = "LOW";
         List<Assignment> items = UiSupport.filterAssignments(service.getAssignments(), query, status, priority);
+        var page = DesktopPaging.slice(list, items, query + "|" + filter);
         list.getChildren().clear();
         if (items.isEmpty()) {
             addEmpty(list, "No assignments match the current view.");
             return;
         }
-        for (Assignment assignment : items) list.getChildren().add(assignmentRow(assignment, list, query, filter));
+        for (Assignment assignment : page.items()) list.getChildren().add(assignmentRow(assignment, list, query, filter));
+        DesktopPaging.controls(list, page, () -> refreshAssignmentList(list, query, filter));
     }
 
     private HBox assignmentRow(Assignment assignment, VBox target, String query, String filter) {
@@ -352,27 +374,20 @@ public class StudySyncApplication extends Application {
         String[] labels = {"Course", "Title", "Description", "Due Date", "Due Time", "Priority"};
         Node[] inputs = {course, title, description, date, time, priority};
         for (int i = 0; i < labels.length; i++) {
-            form.add(new Label(labels[i]), 0, i);
-            form.add(inputs[i], 1, i);
+            addFormField(form, labels[i], inputs[i], i);
         }
         dialog.getDialogPane().setContent(form);
         boolean[] saved = {false};
         Node okButton = dialog.getDialogPane().lookupButton(ButtonType.OK);
         okButton.addEventFilter(ActionEvent.ACTION, event -> {
-            if (title.getText().isBlank()) {
-                showError("Missing assignment title", "Enter a title before saving the assignment.");
-                event.consume();
-                return;
-            }
-            if (course.getValue() == null || priority.getValue() == null) {
-                showError("Missing assignment information", "Choose a course and priority before saving the assignment.");
+            if (title.getText().isBlank() || course.getValue() == null) {
+                showError("Missing assignment information", "Select a course and enter an assignment title.");
                 event.consume();
                 return;
             }
             try {
-                LocalDateTime due = UiSupport.parseDateTime(date.getValue(), time.getText());
-                service.updateAssignment(assignment.getId(), course.getValue().getId(), title.getText().trim(),
-                        description.getText().trim(), due, priority.getValue());
+                LocalDateTime due = UiSupport.parseDateTime(readDate(date), time.getText());
+                service.updateAssignment(assignment.getId(), course.getValue().getId(), title.getText().trim(), description.getText().trim(), due, priority.getValue());
                 saved[0] = true;
             } catch (RuntimeException exception) {
                 showError("Could not edit assignment", safeMessage(exception));
@@ -386,7 +401,7 @@ public class StudySyncApplication extends Application {
     private void showStudySessions() {
         List<Course> courses = service.getCourses();
         if (courses.isEmpty()) {
-            setPage(pageContainer("Study Sessions", "Record and review focused study time.",
+            setPage(pageContainer("Study Sessions", "Track focused study time by course.",
                     card("Study Sessions", styledLabel("Add a course before recording study sessions.", "placeholder-message"))));
             return;
         }
@@ -395,88 +410,97 @@ public class StudySyncApplication extends Application {
         course.getSelectionModel().selectFirst();
         course.setMaxWidth(Double.MAX_VALUE);
         DatePicker date = new DatePicker(LocalDate.now());
-        TextField time = new TextField(LocalTime.now().withSecond(0).withNano(0).toString());
-        TextField duration = new TextField();
+        TextField time = new TextField(LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm")));
+        TextField minutes = new TextField("30");
         TextField notes = new TextField();
-        duration.setPromptText("Minutes");
-        notes.setPromptText("What did you study? (optional)");
-        Button record = primary("Record Session");
+        notes.setPromptText("What did you work on?");
+        Button add = primary("Record Session");
         GridPane form = formGrid();
-        String[] labels = {"Course", "Date", "Start Time", "Duration", "Notes"};
-        Node[] inputs = {course, date, time, duration, notes};
+        String[] labels = {"Course", "Date", "Start Time", "Minutes", "Notes"};
+        Node[] inputs = {course, date, time, minutes, notes};
         for (int i = 0; i < labels.length; i++) {
-            form.add(new Label(labels[i]), 0, i);
-            form.add(inputs[i], 1, i);
+            addFormField(form, labels[i], inputs[i], i);
         }
-        form.add(record, 1, 5);
+        form.add(add, 1, 5);
         TextField search = new TextField();
-        search.setPromptText("Search study notes");
-        ComboBox<String> courseFilter = new ComboBox<>();
-        courseFilter.getItems().add("All Courses");
-        for (Course item : courses) courseFilter.getItems().add(item.getCode());
-        courseFilter.setValue("All Courses");
+        search.setPromptText("Search notes or course");
+        search.setAccessibleText("Search notes or course");
+        ComboBox<String> filter = new ComboBox<>();
+        filter.getItems().add("All Courses");
+        courses.stream().map(Course::getCode).forEach(filter.getItems()::add);
+        filter.setAccessibleText("Filter study sessions by course");
+        filter.setValue("All Courses");
         Button clear = new Button("Clear");
         clear.getStyleClass().add("secondary-button");
-        HBox tools = new HBox(10, search, courseFilter, clear);
+        HBox tools = new HBox(10, search, filter, clear);
         HBox.setHgrow(search, Priority.ALWAYS);
         VBox list = new VBox(10);
-        Runnable refresh = () -> refreshStudySessionList(list, search.getText(), courseFilter.getValue());
+        Runnable refresh = () -> refreshStudySessionList(list, search.getText(), filter.getValue());
         refresh.run();
         search.textProperty().addListener((observable, oldValue, newValue) -> refresh.run());
-        courseFilter.setOnAction(event -> refresh.run());
+        filter.setOnAction(event -> refresh.run());
         clear.setOnAction(event -> {
             search.clear();
-            courseFilter.setValue("All Courses");
+            filter.setValue("All Courses");
         });
-        record.setOnAction(event -> {
+        add.setOnAction(event -> {
             try {
-                int minutes = UiSupport.parsePositiveMinutes(duration.getText());
-                LocalDateTime start = UiSupport.parseDateTime(date.getValue(), time.getText());
-                service.recordStudySession(course.getValue().getId(), start, minutes, notes.getText().trim());
-                showStudySessions();
+                int duration = UiSupport.parsePositiveMinutes(minutes.getText());
+                LocalDateTime start = UiSupport.parseDateTime(readDate(date), time.getText());
+                service.recordStudySession(course.getValue().getId(), start, duration, notes.getText().trim());
+                notes.clear();
+                refresh.run();
             } catch (RuntimeException exception) {
-                showError("Could not record session", safeMessage(exception));
+                showError("Could not record study session", safeMessage(exception));
             }
         });
-        setPage(pageContainer("Study Sessions", "Record, edit, search, and review focused study time.",
-                new VBox(18, card("Record a Study Session", form), card("Find Study Sessions", tools),
-                        card("Study History", new VBox(10, styledLabel("Total study time: " + service.getTotalStudyMinutes() + " minutes", "study-total"), list)))));
+        setPage(pageContainer("Study Sessions", "Track focused study time by course.",
+                new VBox(18, card("Record Study Time", form), card("Find Sessions", tools), card("Study History", list))));
     }
 
-    private void refreshStudySessionList(VBox list, String query, String courseCode) {
-        Integer courseId = null;
-        if (courseCode != null && !"All Courses".equals(courseCode)) {
-            Course selected = service.getCourses().stream().filter(course -> course.getCode().equals(courseCode)).findFirst().orElse(null);
-            if (selected != null) courseId = selected.getId();
-        }
-        List<StudySession> sessions = UiSupport.filterStudySessions(service.getStudySessions(), courseId, query);
+    private void refreshStudySessionList(VBox list, String query, String courseFilter) {
+        List<StudySession> sessions = UiSupport.filterStudySessions(service.getStudySessions(), service.getCourses(), query, courseFilter);
+        var page = DesktopPaging.slice(list, sessions, query + "|" + courseFilter);
         list.getChildren().clear();
         if (sessions.isEmpty()) {
             addEmpty(list, "No study sessions match the current view.");
             return;
         }
-        List<Course> courses = service.getCourses();
-        for (StudySession session : sessions) {
-            Course course = courses.stream().filter(item -> item.getId() == session.getCourseId()).findFirst().orElse(null);
-            VBox details = new VBox(4,
-                    styledLabel((course == null ? "Course #" + session.getCourseId() : course.getCode()) + " • " + session.getDurationMinutes() + " minutes", "assignment-title"),
-                    styledLabel(session.getStartTime().format(DATE_TIME_FORMAT), "assignment-meta"),
-                    styledLabel(session.getNotes().isBlank() ? "No notes" : session.getNotes(), "course-name"));
+        for (StudySession session : page.items()) {
+            Course course = findCourse(session.getCourseId());
+            String courseCode = course == null ? "Course #" + session.getCourseId() : course.getCode();
+            Label title = styledLabel(courseCode + "  •  " + session.getDurationMinutes() + " minutes", "assignment-title");
+            Label meta = styledLabel(session.getStartTime().format(DATE_TIME_FORMAT), "assignment-meta");
+            Label notes = styledLabel(session.getNotes().isBlank() ? "No notes" : session.getNotes(), "course-name");
+            notes.setWrapText(true);
+            VBox details = new VBox(4, title, meta, notes);
             HBox.setHgrow(details, Priority.ALWAYS);
             Button edit = new Button("Edit");
             Button delete = new Button("Delete");
             edit.getStyleClass().add("secondary-button");
             delete.getStyleClass().add("danger-button");
             edit.setOnAction(event -> {
-                if (editStudySession(session)) showStudySessions();
+                if (editStudySession(session)) refreshStudySessionList(list, query, courseFilter);
             });
-            delete.setOnAction(event -> deleteStudySession(session));
+            delete.setOnAction(event -> {
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION, "Delete this " + session.getDurationMinutes() + " minute study session?", ButtonType.OK, ButtonType.CANCEL);
+                confirm.setHeaderText("Delete study session");
+                confirm.showAndWait().filter(ButtonType.OK::equals).ifPresent(result -> {
+                    try {
+                        service.deleteStudySession(session.getId());
+                        refreshStudySessionList(list, query, courseFilter);
+                    } catch (RuntimeException exception) {
+                        showError("Could not delete study session", safeMessage(exception));
+                    }
+                });
+            });
             HBox row = new HBox(10, details, edit, delete);
             row.setAlignment(Pos.CENTER_LEFT);
             row.setPadding(new Insets(14));
             row.getStyleClass().add("course-row");
             list.getChildren().add(row);
         }
+        DesktopPaging.controls(list, page, () -> refreshStudySessionList(list, query, courseFilter));
     }
 
     private boolean editStudySession(StudySession session) {
@@ -487,31 +511,24 @@ public class StudySyncApplication extends Application {
         ComboBox<Course> course = new ComboBox<>();
         course.getItems().addAll(service.getCourses());
         course.getItems().stream().filter(item -> item.getId() == session.getCourseId()).findFirst().ifPresent(course::setValue);
-        course.setMaxWidth(Double.MAX_VALUE);
         DatePicker date = new DatePicker(session.getStartTime().toLocalDate());
         TextField time = new TextField(session.getStartTime().toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")));
-        TextField duration = new TextField(String.valueOf(session.getDurationMinutes()));
+        TextField minutes = new TextField(String.valueOf(session.getDurationMinutes()));
         TextField notes = new TextField(session.getNotes());
         GridPane form = formGrid();
-        String[] labels = {"Course", "Date", "Start Time", "Duration", "Notes"};
-        Node[] inputs = {course, date, time, duration, notes};
+        String[] labels = {"Course", "Date", "Start Time", "Minutes", "Notes"};
+        Node[] inputs = {course, date, time, minutes, notes};
         for (int i = 0; i < labels.length; i++) {
-            form.add(new Label(labels[i]), 0, i);
-            form.add(inputs[i], 1, i);
+            addFormField(form, labels[i], inputs[i], i);
         }
         dialog.getDialogPane().setContent(form);
         boolean[] saved = {false};
         Node okButton = dialog.getDialogPane().lookupButton(ButtonType.OK);
         okButton.addEventFilter(ActionEvent.ACTION, event -> {
-            if (course.getValue() == null) {
-                showError("Missing course", "Choose a course before saving the study session.");
-                event.consume();
-                return;
-            }
             try {
-                int minutes = UiSupport.parsePositiveMinutes(duration.getText());
-                LocalDateTime start = UiSupport.parseDateTime(date.getValue(), time.getText());
-                service.updateStudySession(session.getId(), course.getValue().getId(), start, minutes, notes.getText().trim());
+                int duration = UiSupport.parsePositiveMinutes(minutes.getText());
+                LocalDateTime start = UiSupport.parseDateTime(readDate(date), time.getText());
+                service.updateStudySession(session.getId(), course.getValue().getId(), start, duration, notes.getText().trim());
                 saved[0] = true;
             } catch (RuntimeException exception) {
                 showError("Could not edit study session", safeMessage(exception));
@@ -522,106 +539,80 @@ public class StudySyncApplication extends Application {
         return saved[0];
     }
 
-    private void deleteStudySession(StudySession session) {
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Delete this " + session.getDurationMinutes() + "-minute study session? This will update your study-time totals.",
-                ButtonType.OK, ButtonType.CANCEL);
-        confirm.setHeaderText("Delete study session?");
-        confirm.showAndWait().filter(ButtonType.OK::equals).ifPresent(result -> {
-            try {
-                service.deleteStudySession(session.getId());
-                showStudySessions();
-            } catch (RuntimeException exception) {
-                showError("Could not delete study session", safeMessage(exception));
-            }
-        });
-    }
-
     private void showWorkload() {
-        ComboBox<Integer> window = new ComboBox<>();
-        window.getItems().addAll(3, 7, 14, 30);
-        window.setValue(7);
-        Button refresh = primary("Refresh Plan");
-        HBox controls = new HBox(10, new Label("Plan next"), window, new Label("days"), refresh);
-        controls.setAlignment(Pos.CENTER_LEFT);
-        VBox overdueList = new VBox(10);
-        VBox upcomingList = new VBox(10);
-        Label overdueSummary = styledLabel("", "study-total");
-        Label upcomingSummary = styledLabel("", "study-total");
-        Runnable load = () -> refreshWorkload(overdueList, overdueSummary, upcomingList, upcomingSummary, window.getValue());
-        load.run();
-        refresh.setOnAction(event -> load.run());
-        window.setOnAction(event -> load.run());
-        setPage(pageContainer("Workload", "Plan upcoming assignments and catch overdue work before it falls further behind.",
-                new VBox(18, card("Planning Window", controls), card("Overdue Work", new VBox(12, overdueSummary, overdueList)),
-                        card("Upcoming Workload", new VBox(12, upcomingSummary, upcomingList)))));
-    }
-
-    private void refreshWorkload(VBox overdueList, Label overdueSummary, VBox upcomingList, Label upcomingSummary, int days) {
-        try {
-            List<Assignment> overdue = service.getOverdueAssignments();
-            overdueList.getChildren().clear();
-            overdueSummary.setText(overdue.size() + " overdue assignment" + (overdue.size() == 1 ? "" : "s"));
-            if (overdue.isEmpty()) addEmpty(overdueList, "No overdue assignments. Nice work staying current.");
-            else for (Assignment assignment : overdue) overdueList.getChildren().add(workloadRow(assignment, "Overdue"));
-            List<Assignment> upcoming = service.getUpcomingAssignments(days);
-            upcomingList.getChildren().clear();
-            upcomingSummary.setText(upcoming.size() + " upcoming assignment" + (upcoming.size() == 1 ? "" : "s") + " in the next " + days + " days");
-            if (upcoming.isEmpty()) addEmpty(upcomingList, "Nothing is due in this planning window.");
-            else {
-                for (Assignment assignment : upcoming) {
-                    long remaining = java.time.Duration.between(LocalDateTime.now(), assignment.getDueDate()).toDays();
-                    upcomingList.getChildren().add(workloadRow(assignment, remaining <= 1 ? "Due very soon" : remaining <= 3 ? "Due soon" : "Upcoming"));
-                }
+        List<AssignmentPlanItem> plan = service.getAssignmentPlan();
+        VBox content = new VBox(12);
+        if (plan.isEmpty()) {
+            addEmpty(content, "No pending assignments. Your workload is clear.");
+        } else {
+            for (AssignmentPlanItem item : plan) {
+                Assignment assignment = item.assignment();
+                Course course = findCourse(assignment.getCourseId());
+                String courseCode = course == null ? "Course #" + assignment.getCourseId() : course.getCode();
+                String timing = item.minutesUntilDue() < 0 ? Math.abs(item.minutesUntilDue()) + " min overdue" : item.minutesUntilDue() + " min remaining";
+                VBox details = new VBox(4,
+                        styledLabel(assignment.getTitle(), "assignment-title"),
+                        styledLabel(courseCode + "  •  " + item.urgency() + "  •  " + assignment.getPriority(), "assignment-meta"),
+                        styledLabel("Due " + assignment.getDueDate().format(DATE_TIME_FORMAT) + "  •  " + timing, "course-name"));
+                details.setPadding(new Insets(14));
+                details.getStyleClass().add("course-row");
+                content.getChildren().add(details);
             }
-        } catch (RuntimeException exception) {
-            showError("Could not load workload", safeMessage(exception));
         }
+        setPage(pageContainer("Workload", "See pending work ordered by urgency, priority, and deadline.", card("Priority Queue", content)));
     }
 
-    private VBox workloadRow(Assignment assignment, String urgencyText) {
-        Course course = findCourse(assignment.getCourseId());
-        String code = course == null ? "Course #" + assignment.getCourseId() : course.getCode();
-        Label title = styledLabel(assignment.getTitle(), "assignment-title");
-        Label meta = styledLabel(code + " • " + assignment.getPriority() + " priority • Due " + assignment.getDueDate().format(DATE_TIME_FORMAT), "assignment-meta");
-        Label urgency = styledLabel(urgencyText, "workload-urgency");
-        return styledBox(new VBox(4, title, meta, urgency), "course-row");
-    }
-
-    private Course findCourse(int id) {
-        return service.getCourses().stream().filter(course -> course.getId() == id).findFirst().orElse(null);
+    private Course findCourse(int courseId) {
+        return service.getCourses().stream().filter(course -> course.getId() == courseId).findFirst().orElse(null);
     }
 
     private VBox pageContainer(String title, String subtitle, Node content) {
-        VBox page = new VBox(18, styledLabel(title, "page-title"), styledLabel(subtitle, "page-subtitle"), content);
-        page.setPadding(new Insets(28));
-        return page;
+        VBox body = new VBox(18, styledLabel(title, "page-title"), styledLabel(subtitle, "page-subtitle"), content);
+        body.setPadding(new Insets(28));
+        ScrollPane scrollPane = new ScrollPane(body);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.getStyleClass().add("page-scroll");
+        VBox wrapper = new VBox(scrollPane);
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+        return wrapper;
     }
 
     private VBox card(String title, Node content) {
-        VBox box = new VBox(12, styledLabel(title, "section-title"), content);
-        box.setPadding(new Insets(18));
-        box.getStyleClass().add("card");
-        return box;
+        VBox card = new VBox(12, styledLabel(title, "section-title"), content);
+        card.setPadding(new Insets(18));
+        card.getStyleClass().add("card");
+        return card;
+    }
+
+    private LocalDate readDate(DatePicker picker) {
+        try {
+            LocalDate date = picker.getConverter().fromString(picker.getEditor().getText());
+            picker.setValue(date);
+            return date;
+        } catch (java.time.DateTimeException exception) {
+            throw new IllegalArgumentException("Enter a valid date or choose one from the calendar.");
+        }
+    }
+
+    private void addFormField(GridPane form, String text, Node input, int row) {
+        Label label = new Label(text);
+        label.setLabelFor(input);
+        input.setAccessibleText(text);
+        form.add(label, 0, row);
+        form.add(input, 1, row);
     }
 
     private GridPane formGrid() {
         GridPane grid = new GridPane();
         grid.setHgap(12);
         grid.setVgap(12);
-        ColumnConstraints first = new ColumnConstraints();
-        first.setMinWidth(110);
-        ColumnConstraints second = new ColumnConstraints();
-        second.setHgrow(Priority.ALWAYS);
-        grid.getColumnConstraints().addAll(first, second);
+        ColumnConstraints labelColumn = new ColumnConstraints();
+        labelColumn.setMinWidth(110);
+        ColumnConstraints inputColumn = new ColumnConstraints();
+        inputColumn.setHgrow(Priority.ALWAYS);
+        grid.getColumnConstraints().addAll(labelColumn, inputColumn);
         return grid;
-    }
-
-    private VBox createMetricCard(String title, Object value) {
-        VBox box = new VBox(8, styledLabel(title, "metric-title"), styledLabel(String.valueOf(value), "metric-value"));
-        box.setPadding(new Insets(18));
-        box.getStyleClass().add("metric-card");
-        return box;
     }
 
     private Button primary(String text) {
@@ -630,38 +621,33 @@ public class StudySyncApplication extends Application {
         return button;
     }
 
-    private Label styledLabel(String text, String style) {
+    private Label styledLabel(String text, String styleClass) {
         Label label = new Label(text);
-        label.getStyleClass().add(style);
+        label.getStyleClass().add(styleClass);
+        label.setWrapText(true);
         return label;
     }
 
-    private VBox styledBox(VBox box, String style) {
-        box.setPadding(new Insets(14));
-        box.getStyleClass().add(style);
-        return box;
-    }
-
-    private void addEmpty(VBox box, String text) {
-        box.getChildren().add(styledLabel(text, "placeholder-message"));
+    private void addEmpty(VBox target, String message) {
+        target.getChildren().add(styledLabel(message, "placeholder-message"));
     }
 
     private void setPage(Node node) {
-        ScrollPane scroll = new ScrollPane(node);
-        scroll.setFitToWidth(true);
-        scroll.getStyleClass().add("page-scroll");
-        root.setCenter(scroll);
+        root.setCenter(node);
     }
 
     private void showError(String header, String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR, message, ButtonType.OK);
-        alert.setTitle("StudySync");
         alert.setHeaderText(header);
         alert.showAndWait();
     }
 
-    private String safeMessage(Throwable error) {
-        String message = error.getMessage();
+    private String safeMessage(RuntimeException exception) {
+        String message = exception.getMessage();
         return message == null || message.isBlank() ? "An unexpected error occurred." : message;
+    }
+
+    public static void main(String[] args) {
+        launch(args);
     }
 }

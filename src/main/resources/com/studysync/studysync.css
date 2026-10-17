@@ -26,3 +26,12 @@
 .text-field, .combo-box, .date-picker { -fx-background-radius: 7px; -fx-border-radius: 7px; -fx-border-color: #d1d5db; }
 .text-field { -fx-padding: 9 11; }
 .course-row { -fx-background-color: #f9fafb; -fx-background-radius: 8px; -fx-border-color: #e5e7eb; -fx-border-radius: 8px; }
+/* Keyboard focus stays visible across the desktop interface. */
+.button:focused, .check-box:focused, .combo-box:focused, .text-field:focused, .date-picker:focused {
+    -fx-border-color: #2563eb;
+    -fx-border-width: 2px;
+    -fx-border-radius: 7px;
+}
+.button { -fx-min-height: 32px; }
+.chart { -fx-background-color: white; -fx-padding: 12px; }
+.chart-title { -fx-font-size: 17px; }

@@ -1,3 +1,42 @@
+# 3.0.0
+
+- Complete the established desktop productivity scope with verified native file workflows and legacy upgrades.
+- Add 50-row paging for long course, assignment, session, grade, and search histories.
+- Add text alternatives for weighted course-grade charts and clearer accessible field names.
+- Verify larger multi-year histories across 100 repeated mutation/backup/restore/reopen cycles.
+- Audit Windows accessibility names, roles, and keyboard-focus metadata.
+- Package Windows ZIP/Linux TAR.GZ downloads and publish checksums through the stable release workflow.
+
+# 3.0.0-rc.4
+
+- Add Ctrl+1 through Ctrl+9 page shortcuts and Alt+B/R/E data-action mnemonics.
+- Improve form accessibility names and wrapped text.
+- Add UI tests for backup/export selection and cancellation, restore confirmation, usable recovery snapshots, keyboard traversal, and minimum-window scrolling.
+- Make schema upgrades transactional and versioned; preserve old records and reject unsupported newer databases without changes.
+- Import compatible legacy backups without modifying the backup source.
+- Add a Windows-native Save/Open dialog and packaged repeat-launch test using synthetic data.
+
+# 3.0.0-rc.3
+
+- Commit typed dates before saving assignment and study-session forms, including edit dialogs; reject invalid dates instead of silently using the old date.
+- Include assessment grades in the course-deletion warning.
+- Associate all core form labels with their controls for accessibility.
+- Use clear duration-validation messages in session forms.
+- Expand desktop interaction coverage to course create/edit/duplicate validation/cascading deletion, assignment lifecycle and correction, study-session lifecycle and correction, and typed-date creation/editing.
+
+# 3.0.0-rc.2
+
+- Fixed calendar month navigation keeping the agenda on an off-screen date; month-end navigation now clamps safely, including leap years.
+- Fixed backup restore for filenames containing URI characters such as # and %.
+- Reject restoring the active database with an actionable message; preserve existing data.
+- Save pre-restore recovery snapshots in ~/.studysync/recovery-backups.
+- Add nine automated JavaFX interaction tests for grade add/edit/validation/delete/cancel, calendar completion/reopening and leap-day navigation, settings persistence, and search.
+- Run desktop interaction checks in CI and native packaging builds.
+
+# 3.0.0-rc.1
+
+Desktop calendar, weighted assessment tracking and charts, unified search, in-app reminders, local data settings, SQLite backup/import with recovery snapshots, CSV reporting, accessible focus styles, desktop launcher and app-image scripts. See docs/DESKTOP-V3.md for scope and remaining acceptance.
+
 # Changelog
 
 All notable changes to StudySync are documented in this file.

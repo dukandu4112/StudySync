@@ -9,7 +9,7 @@
 
     <groupId>com.studysync</groupId>
     <artifactId>studysync</artifactId>
-    <version>2.2.0</version>
+    <version>3.0.0</version>
 
     <name>StudySync</name>
     <description>
@@ -76,7 +76,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.studysync.Main</mainClass>
+                            <mainClass>com.studysync.DesktopLauncher</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -98,7 +98,7 @@
                             <shadedClassifierName>all</shadedClassifierName>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.studysync.Main</mainClass>
+                                    <mainClass>com.studysync.DesktopLauncher</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
@@ -107,4 +107,27 @@
             </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>desktop-qa</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.testfx</groupId>
+                    <artifactId>openjfx-monocle</artifactId>
+                    <version>17.0.10</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+            <build><plugins><plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration><systemPropertyVariables>
+                    <desktop.tests>true</desktop.tests>
+                    <glass.platform>Monocle</glass.platform>
+                    <monocle.platform>Headless</monocle.platform>
+                    <prism.order>sw</prism.order>
+                </systemPropertyVariables></configuration>
+            </plugin></plugins></build>
+        </profile>
+    </profiles>
 </project>
