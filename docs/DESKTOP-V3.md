@@ -34,13 +34,13 @@ mvn javafx:run
 The executable JAR opens the desktop interface:
 
 ```sh
-java -jar target/studysync-3.0.0-rc.3-all.jar
+java -jar target/studysync-3.0.0-rc.4-all.jar
 ```
 
 The original CLI remains available:
 
 ```sh
-java -cp target/studysync-3.0.0-rc.3-all.jar com.studysync.Main
+java -cp target/studysync-3.0.0-rc.4-all.jar com.studysync.Main
 ```
 
 The plain Java desktop launcher reuses `studysync.db` in the working directory
@@ -75,14 +75,31 @@ create/edit/complete/reopen/delete, session create/edit/delete, correcting inval
 forms, typed-date validation and persistence, grade create/edit/validation,
 delete/cancel confirmation, clear-edit behavior, calendar complete/reopen and
 month/leap-date navigation, preference persistence, and search/clear. CI and
-native packaging run this profile automatically. The native file chooser itself
-is not automated; backup/restore is covered at the data layer.
+native packaging run this profile automatically. The Windows packaging job additionally opens the native Save/Open dialogs with
+synthetic data, checks cancellation, backs up, exports, restores, and reopens
+the packaged application. These native checks must pass in CI.
 
 Recovery snapshots are saved in `~/.studysync/recovery-backups`.
 
 Development continues beyond v3.0 whenever the intended goals remain unmet;
 version numbers do not define project completion. See
 [DEVELOPMENT-GOALS.md](DEVELOPMENT-GOALS.md).
+
+## Keyboard and upgrade behavior
+
+Ctrl+1 through Ctrl+9 open the nine navigation pages in order. Data & Settings
+also supports Alt+B for backup, Alt+R for restore, and Alt+E for CSV export.
+Tab reaches the form from navigation, and core form labels identify controls.
+
+Database schema upgrades run in a transaction. Compatible legacy course,
+assignment, and study-session data is preserved; missing settings/grade tables
+are added. Unsupported newer schema versions are rejected without modification.
+Compatible legacy backup imports leave the source backup unchanged.
+
+Automated checks cover minimum-window navigation/scrolling and repeated database
+reopening. Screen-reader behavior and long-duration human use still require
+real-world evaluation; passing automated checks alone is not an accessibility
+certification.
 
 ## Acceptance before final release
 

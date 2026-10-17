@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
  */
 public class DatabaseManager {
 
+    static final int SCHEMA_VERSION = 1;
     private static final String DEFAULT_DATABASE_URL = "jdbc:sqlite:studysync.db";
     private final String databaseUrl;
 
@@ -38,10 +39,19 @@ public class DatabaseManager {
         String createStudySessionsTable = "CREATE TABLE IF NOT EXISTS study_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, course_id INTEGER NOT NULL, start_time TEXT NOT NULL, duration_minutes INTEGER NOT NULL CHECK (duration_minutes > 0), notes TEXT NOT NULL DEFAULT '', FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE)";
         String createSettingsTable = "CREATE TABLE IF NOT EXISTS app_settings (setting_key TEXT PRIMARY KEY, setting_value TEXT NOT NULL)";
         try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
+            int version;
+            try (ResultSet result = statement.executeQuery("PRAGMA user_version")) { result.next(); version = result.getInt(1); }
+            if (version < 0 || version > SCHEMA_VERSION)
+                throw new IllegalStateException("This database requires a newer StudySync version. Its data was not changed.");
+            connection.setAutoCommit(false);
+            try {
             statement.execute(createCoursesTable); statement.execute(createAssignmentsTable); statement.execute(createStudySessionsTable); statement.execute(createSettingsTable);
             statement.execute("CREATE TABLE IF NOT EXISTS academic_grades (id INTEGER PRIMARY KEY AUTOINCREMENT, course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE, title TEXT NOT NULL, earned REAL NOT NULL CHECK(earned >= 0), possible REAL NOT NULL CHECK(possible > 0 AND earned <= possible), weight REAL NOT NULL CHECK(weight > 0))");
             statement.execute("CREATE INDEX IF NOT EXISTS assignments_course_due ON assignments(course_id, due_date)");
             statement.execute("CREATE INDEX IF NOT EXISTS sessions_course_start ON study_sessions(course_id, start_time)");
+            statement.execute("PRAGMA user_version = " + SCHEMA_VERSION);
+            connection.commit();
+            } catch (SQLException | RuntimeException failure) { connection.rollback(); throw failure; }
         } catch (SQLException exception) { throw new IllegalStateException("Unable to initialize the StudySync database.", exception); }
     }
 

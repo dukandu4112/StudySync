@@ -40,6 +40,14 @@ public class StudySyncApplication extends Application {
         showDashboard();
         Scene scene = new Scene(root, 1100, 700);
         scene.getStylesheets().add(getClass().getResource("/com/studysync/studysync.css").toExternalForm());
+        for (int index = 0; index < navigation.getChildren().size(); index++) {
+            Button button = (Button) navigation.getChildren().get(index);
+            String shortcut = "Ctrl+" + (index + 1);
+            button.setTooltip(new Tooltip(shortcut + " — " + button.getText()));
+            button.setAccessibleHelp("Open " + button.getText() + " using " + shortcut);
+            scene.getAccelerators().put(new javafx.scene.input.KeyCodeCombination(
+                    javafx.scene.input.KeyCode.valueOf("DIGIT" + (index + 1)), javafx.scene.input.KeyCombination.CONTROL_DOWN), button::fire);
+        }
         stage.setTitle("StudySync 3.0 — Release Candidate");
         stage.setMinWidth(900);
         stage.setMinHeight(600);
@@ -604,6 +612,7 @@ public class StudySyncApplication extends Application {
     private Label styledLabel(String text, String styleClass) {
         Label label = new Label(text);
         label.getStyleClass().add(styleClass);
+        label.setWrapText(true);
         return label;
     }
 

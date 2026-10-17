@@ -29,18 +29,13 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: bash scripts/package-desktop.sh
-      - name: Launch Windows app image
+      - name: Test Windows native dialogs and repeat launch
         if: runner.os == 'Windows'
         shell: pwsh
-        run: |
-          $app = Start-Process target/desktop/StudySync/StudySync.exe -PassThru
-          Start-Sleep -Seconds 8
-          $app.Refresh()
-          if ($app.HasExited) { throw "Desktop app exited during startup ($($app.ExitCode))" }
-          Stop-Process -Id $app.Id
+        run: ./scripts/test-windows-dialogs.ps1
       - name: Upload desktop app image
         uses: actions/upload-artifact@v4
         with:
-          name: StudySync-3.0.0-rc.3-${{ runner.os }}
+          name: StudySync-3.0.0-rc.4-${{ runner.os }}
           path: target/desktop/
           if-no-files-found: error

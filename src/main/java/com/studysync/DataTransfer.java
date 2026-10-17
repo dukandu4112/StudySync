@@ -32,12 +32,26 @@ public final class DataTransfer {
                     throw new IOException("This file is the active database. Select a separate backup to restore.");
             }
         }
+        boolean hasSettings = false;
+        boolean hasGrades = false;
         // Validate a read-only connection before touching the live database.
         try (Connection input = DriverManager.getConnection("jdbc:sqlite:" + path.toUri() + "?mode=ro"); Statement s = input.createStatement()) {
             try (ResultSet result = s.executeQuery("PRAGMA quick_check")) {
                 if (!result.next() || !"ok".equals(result.getString(1))) throw new SQLException("Backup integrity check failed.");
             }
+            int version;
+            try (ResultSet r = s.executeQuery("PRAGMA user_version")) { r.next(); version = r.getInt(1); }
+            if (version < 0 || version > DatabaseManager.SCHEMA_VERSION)
+                throw new IOException("This backup requires a newer StudySync version.");
             for (String table : TABLES) {
+                boolean exists;
+                try (PreparedStatement lookup = input.prepareStatement("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?")) {
+                    lookup.setString(1, table);
+                    try (ResultSet r = lookup.executeQuery()) { exists = r.next(); }
+                }
+                if (table.equals("app_settings")) hasSettings = exists;
+                if (table.equals("academic_grades")) hasGrades = exists;
+                if (!exists && version == 0 && (table.equals("app_settings") || table.equals("academic_grades"))) continue;
                 try (ResultSet rows = s.executeQuery("SELECT * FROM " + table + " LIMIT 0")) {
                     if (rows.getMetaData().getColumnCount() == 0) throw new SQLException("Invalid backup table: " + table);
                 }
@@ -55,8 +69,8 @@ public final class DataTransfer {
                 s.executeUpdate("INSERT INTO courses(id,name,code) SELECT id,name,code FROM imported.courses");
                 s.executeUpdate("INSERT INTO assignments(id,course_id,title,description,due_date,priority,completed) SELECT id,course_id,title,description,due_date,priority,completed FROM imported.assignments");
                 s.executeUpdate("INSERT INTO study_sessions(id,course_id,start_time,duration_minutes,notes) SELECT id,course_id,start_time,duration_minutes,notes FROM imported.study_sessions");
-                s.executeUpdate("INSERT INTO app_settings(setting_key,setting_value) SELECT setting_key,setting_value FROM imported.app_settings");
-                s.executeUpdate("INSERT INTO academic_grades(id,course_id,title,earned,possible,weight) SELECT id,course_id,title,earned,possible,weight FROM imported.academic_grades");
+                if (hasSettings) s.executeUpdate("INSERT INTO app_settings(setting_key,setting_value) SELECT setting_key,setting_value FROM imported.app_settings");
+                if (hasGrades) s.executeUpdate("INSERT INTO academic_grades(id,course_id,title,earned,possible,weight) SELECT id,course_id,title,earned,possible,weight FROM imported.academic_grades");
                 // Exercise domain validation before committing imported data.
                 try (ResultSet r = s.executeQuery("SELECT * FROM assignments")) {
                     while (r.next()) new Assignment(r.getInt("id"), r.getInt("course_id"), r.getString("title"), r.getString("description"), java.time.LocalDateTime.parse(r.getString("due_date")), Assignment.Priority.valueOf(r.getString("priority")), r.getInt("completed") == 1);

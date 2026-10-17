@@ -60,7 +60,7 @@ class DesktopInteractionTest {
     }
     private static Button button(Parent view, String text) {
         return nodes(view).stream().filter(Button.class::isInstance).map(Button.class::cast)
-            .filter(b -> b.getText().equals(text)).findFirst().orElseThrow();
+            .filter(b -> b.getText().replace("_", "").equals(text)).findFirst().orElseThrow();
     }
     private static boolean hasText(Parent view, String text) {
         return nodes(view).stream().filter(Labeled.class::isInstance).map(Labeled.class::cast)
@@ -386,6 +386,93 @@ class DesktopInteractionTest {
                 field(pane, "Course Name", TextField.class).setText("Algebra"); respond(pane, ButtonType.OK);
             }, () -> button(root, "Edit").fire());
             assertEquals("Algebra", service.getCourses().get(0).getName());
+        });
+    }
+
+    @Test void backupAndReportButtonsWriteSelectedFilesAndCancellationDoesNothing() throws Exception {
+        fx(() -> {
+            java.util.ArrayDeque<java.io.File> choices = new java.util.ArrayDeque<>();
+            Path backup = folder.resolve("chosen backup.db"), report = folder.resolve("chosen report.csv");
+            choices.add(backup.toFile()); choices.add(report.toFile());
+            var view = new DataSettingsView(database, service, (owner, save, title, name, pattern) -> choices.poll(), folder.resolve("recovery")); show(view);
+            button(view, "Create database backup").fire(); assertTrue(java.nio.file.Files.isRegularFile(backup));
+            button(view, "Export report to CSV").fire();
+            try { assertTrue(java.nio.file.Files.readString(report).contains("MAT101")); }
+            catch (java.io.IOException e) { throw new RuntimeException(e); }
+            button(view, "Create database backup").fire();
+            button(view, "Export report to CSV").fire();
+            button(view, "Restore / import database backup").fire();
+            assertEquals(1, service.getCourses().size()); assertFalse(java.nio.file.Files.exists(folder.resolve("recovery")));
+        });
+    }
+    @Test void restoreButtonRequiresConfirmationAndCreatesUsableRecoverySnapshot() throws Exception {
+        Path backup = folder.resolve("backup.db"), recovery = folder.resolve("recovery");
+        new DataTransfer(database).backup(backup); service.setDailyStudyTargetMinutes(33);
+        fx(() -> {
+            var view = new DataSettingsView(database, service, (owner, save, title, name, pattern) -> backup.toFile(), recovery); show(view);
+            dialog(pane -> respond(pane, ButtonType.CANCEL), () -> button(view, "Restore / import database backup").fire());
+            assertEquals(33, service.getDailyStudyTargetMinutes()); assertFalse(java.nio.file.Files.exists(recovery));
+            dialog(pane -> respond(pane, ButtonType.OK), () -> button(view, "Restore / import database backup").fire());
+            assertEquals(120, service.getDailyStudyTargetMinutes()); assertTrue(hasText(view, "Data restored"));
+            try (var files = java.nio.file.Files.list(recovery)) {
+                Path snapshot = files.findFirst().orElseThrow(); new DataTransfer(database).restore(snapshot);
+                assertEquals(33, service.getDailyStudyTargetMinutes());
+            } catch (Exception e) { throw new RuntimeException(e); }
+        });
+    }
+    @Test void invalidSelectedRestoreKeepsDataAndRecovery() throws Exception {
+        Path bad = folder.resolve("bad.db"), recovery = folder.resolve("recovery");
+        java.nio.file.Files.writeString(bad, "not sqlite"); service.setDailyStudyTargetMinutes(55);
+        fx(() -> {
+            var view = new DataSettingsView(database, service, (owner, save, title, name, pattern) -> bad.toFile(), recovery); show(view);
+            dialog(confirm -> {
+                dialog(error -> respond(error, ButtonType.OK), () -> respond(confirm, ButtonType.OK));
+            }, () -> button(view, "Restore / import database backup").fire());
+            assertEquals(55, service.getDailyStudyTargetMinutes()); assertEquals(1, service.getCourses().size());
+            assertTrue(java.nio.file.Files.isDirectory(recovery)); assertTrue(hasText(view, "Action failed"));
+        });
+    }
+    @Test void keyboardShortcutsReachEveryPageAndLabelsHaveAccessibleTargets() throws Exception {
+        fx(() -> {
+            Parent root = openApp("Courses"); Scene scene = stage.getScene();
+            String[] pages = {"Dashboard", "Courses", "Assignments", "Study Sessions", "Workload", "Calendar", "Grades", "Search & Reminders", "Data & Settings"};
+            for (int digit = 1; digit <= 9; digit++) {
+                javafx.event.Event.fireEvent(scene, new javafx.scene.input.KeyEvent(javafx.scene.input.KeyEvent.KEY_PRESSED,
+                    "", "", javafx.scene.input.KeyCode.valueOf("DIGIT" + digit), false, true, false, false));
+                root.applyCss(); root.layout();
+                String page = nodes(root).stream().filter(Label.class::isInstance).map(Label.class::cast)
+                    .filter(label -> label.getStyleClass().contains("page-title")).map(Label::getText).findFirst().orElseThrow();
+                assertEquals(pages[digit - 1], page);
+            }
+            assertTrue(hasText(root, "Manage goals, reminders"));
+            TextField goal = field(root, "Daily study goal (minutes)", TextField.class);
+            assertTrue(goal.isFocusTraversable()); assertEquals("Daily study goal in minutes", goal.getAccessibleText());
+            button(root, "Data & Settings").requestFocus();
+            for (int step = 0; step < 3 && scene.getFocusOwner() != goal; step++) {
+                javafx.event.Event.fireEvent(scene.getFocusOwner(), new javafx.scene.input.KeyEvent(javafx.scene.input.KeyEvent.KEY_PRESSED,
+                    "", "", javafx.scene.input.KeyCode.TAB, false, false, false, false));
+            }
+            assertSame(goal, scene.getFocusOwner(), "Tab should reach the form from navigation");
+        });
+    }
+
+    @Test void minimumWindowKeepsNavigationVisibleAndLongContentScrollable() throws Exception {
+        for (int i = 0; i < 35; i++) service.createCourse("A longer course name for scrolling " + i, "SCROLL" + i);
+        fx(() -> { openApp("Courses"); stage.setWidth(900); stage.setHeight(600); });
+        CountDownLatch pulse = new CountDownLatch(1);
+        Platform.runLater(() -> {
+            var pause = new javafx.animation.PauseTransition(javafx.util.Duration.millis(150));
+            pause.setOnFinished(e -> pulse.countDown()); pause.play();
+        });
+        assertTrue(pulse.await(5, TimeUnit.SECONDS));
+        fx(() -> {
+            Parent root = stage.getScene().getRoot(); root.applyCss(); root.layout();
+            Button last = button(root, "Data & Settings");
+            assertTrue(last.localToScene(last.getBoundsInLocal()).getMaxY() <= stage.getScene().getHeight() + 1, "Navigation must remain on screen");
+            ScrollPane scroll = nodes(root).stream().filter(ScrollPane.class::isInstance).map(ScrollPane.class::cast).findFirst().orElseThrow();
+            assertTrue(scroll.getContent().getBoundsInLocal().getHeight() > scroll.getViewportBounds().getHeight());
+            scroll.setVvalue(1); root.layout();
+            assertEquals(1, scroll.getVvalue());
         });
     }
 }

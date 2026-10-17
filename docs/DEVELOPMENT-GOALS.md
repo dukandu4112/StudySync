@@ -24,12 +24,17 @@ and verified problems.
 
 ## Remaining work to assess
 
-- Full native file-chooser backup/restore/export workflows.
+- Native Windows Save/Open workflows are exercised in the desktop packaging job;
+  cancellation, backup, export, restore, and repeat launch must pass.
 - Desktop lifecycle tests now cover course, assignment, and study-session editing,
   cancellations, validation corrections, and deletion. Continue adding coverage
   for larger and more varied real-world workflows.
-- Resizing, keyboard-only navigation, accessibility, and realistic larger datasets.
-- Long-running use, repeat-launch persistence, and upgrade recovery.
+- Automated checks cover shortcuts, Tab traversal, accessible form labels, and
+  minimum-window navigation/scrolling. Screen-reader evaluation and realistic
+  larger datasets remain areas for further review.
+- Automated checks cover legacy upgrades, failed upgrade rollback, repeated
+  reopening, recovery snapshots, and rejection of newer schemas. Long-running
+  real-world use remains to be evaluated.
 - Further feature requirements from the original project goals and user feedback.
 
 Do not describe these as completed simply because a build passes or a version

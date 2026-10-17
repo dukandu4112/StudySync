@@ -1,3 +1,12 @@
+# 3.0.0-rc.4
+
+- Add Ctrl+1 through Ctrl+9 page shortcuts and Alt+B/R/E data-action mnemonics.
+- Improve form accessibility names and wrapped text.
+- Add UI tests for backup/export selection and cancellation, restore confirmation, usable recovery snapshots, keyboard traversal, and minimum-window scrolling.
+- Make schema upgrades transactional and versioned; preserve old records and reject unsupported newer databases without changes.
+- Import compatible legacy backups without modifying the backup source.
+- Add a Windows-native Save/Open dialog and packaged repeat-launch test using synthetic data.
+
 # 3.0.0-rc.3
 
 - Commit typed dates before saving assignment and study-session forms, including edit dialogs; reject invalid dates instead of silently using the old date.

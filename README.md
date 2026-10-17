@@ -1,6 +1,6 @@
 # StudySync
 
-**Desktop 3.0.0-rc.3 — release candidate, based on develop-2.3.**
+**Desktop 3.0.0-rc.4 — release candidate, based on develop-2.3.**
 
 JavaFX windows, buttons, SQLite persistence, smart study planning, courses,
 assignments, study history, workload, calendar, weighted grades and charts,
@@ -14,7 +14,7 @@ mvn javafx:run
 Packaged desktop:
 
 ```sh
-java -jar target/studysync-3.0.0-rc.3-all.jar
+java -jar target/studysync-3.0.0-rc.4-all.jar
 ```
 
 See [desktop guide](docs/DESKTOP-V3.md) for data locations, CLI compatibility,
