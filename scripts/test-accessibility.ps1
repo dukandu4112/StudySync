@@ -14,13 +14,17 @@ for ($attempt = 0; $attempt -lt 40; $attempt++) {
 }
 if (-not $window) { throw "StudySync window is missing from the Windows accessibility tree" }
 $checks = @(
-    @{ Name = "Daily study goal in minutes"; Type = [System.Windows.Automation.ControlType]::Edit },
+    @{ Name = "Daily study goal (minutes)"; Type = [System.Windows.Automation.ControlType]::Edit },
     @{ Name = "Create database backup"; Type = [System.Windows.Automation.ControlType]::Button },
     @{ Name = "Restore database backup"; Type = [System.Windows.Automation.ControlType]::Button },
     @{ Name = "Export CSV report"; Type = [System.Windows.Automation.ControlType]::Button }
 )
 foreach ($check in $checks) {
-    $condition = [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::NameProperty, $check.Name)
+    # Windows uses the associated visible label as an edit control's name.
+    # Match the role too, since JavaFX also exposes the label's text node.
+    $nameCondition = [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::NameProperty, $check.Name)
+    $typeCondition = [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ControlTypeProperty, $check.Type)
+    $condition = [System.Windows.Automation.AndCondition]::new($nameCondition, $typeCondition)
     $control = $null
     for ($attempt = 0; $attempt -lt 40; $attempt++) {
         $control = $window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
