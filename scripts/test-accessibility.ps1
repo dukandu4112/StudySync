@@ -7,7 +7,7 @@ $window = $null
 for ($attempt = 0; $attempt -lt 40; $attempt++) {
     $children = $root.FindAll([System.Windows.Automation.TreeScope]::Children, [System.Windows.Automation.Condition]::TrueCondition)
     foreach ($child in $children) {
-        if ($child.Current.Name -like "StudySync 3.0*") { $window = $child; break }
+        if ($child.Current.Name -like "StudySync 3.1*") { $window = $child; break }
     }
     if ($window) { break }
     Start-Sleep -Milliseconds 250

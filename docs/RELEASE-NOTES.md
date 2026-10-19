@@ -1,25 +1,21 @@
-StudySync 3.0.0 delivers the desktop student-productivity scope with courses,
-assignments, calendar planning, study history and goals, smart study plans,
-weighted assessment grades/charts, unified search, in-app reminders, preferences,
-CSV reports, database backup/import, and transactional legacy upgrades.
+StudySync 3.1.0 refreshes the desktop workspace and makes the dashboard actionable.
 
-Download the Windows ZIP or Linux TAR.GZ and extract the entire archive.
-Windows: open `StudySync/StudySync.exe`. Linux: run `StudySync/bin/StudySync`.
-A Java runtime is included. Verify downloads against SHA256SUMS.txt.
+- Teal/navy desktop theme, clearer typography, styled cards, readable inputs, and visible keyboard focus.
+- Dashboard quick actions open courses, assignments, study sessions, and calendar with matching navigation selection.
+- First-use guidance helps build a real workspace without inserting sample records.
+- Deadline queue shows the five earliest pending deadlines, identifies overdue work, and saves completion immediately.
+- Daily goal and deadline cards stack at smaller widths. Course progress and planning details remain available in an expandable insights panel.
 
-Validation includes automated domain/database tests, desktop interactions,
-legacy upgrade/rollback, repeated use with a larger history, and real Windows
-Save/Open dialogs with restore and repeat launch. Windows accessibility metadata
-is checked separately from speech-reader testing.
+All existing courses, grades, study history, planning, calendar, search, backup,
+restore, and export features remain available. The database schema is unchanged
+from 3.0.0. Back up existing data through Data & Settings before upgrading.
 
-Back up existing data before upgrading. The launcher reuses a working-directory
-studysync.db when present, otherwise ~/.studysync/studysync.db. Recovery snapshots
-are saved under ~/.studysync/recovery-backups. Do not run multiple instances
-against the same database during restore.
+Download and extract the entire Windows ZIP or Linux TAR.GZ. Open
+StudySync/StudySync.exe on Windows or StudySync/bin/StudySync on Linux. Java is
+included. Download checksums are in SHA256SUMS.txt.
 
-Known limits: reminders are in-app and refresh when opened; CSV is a report,
-not the restore format; Windows and Linux packages are OS-specific. Human
-screen-reader evaluation and months of real-world use are not claimed by the
-automated checks. See docs/RELEASE-VALIDATION.md for evidence and limitations.
-
-This release is a milestone, not the endpoint for StudySync development.
+Validation covers automated service/database tests, real JavaFX interactions,
+wide/compact layout snapshots, and native Windows startup, accessibility metadata,
+Save/Open cancellation, backup, export, restore, and repeat launch.
+Human screen-reader evaluation and months of real-world use are not claimed.
+See docs/RELEASE-VALIDATION.md for known limits.

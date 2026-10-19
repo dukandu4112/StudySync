@@ -48,7 +48,7 @@ public class StudySyncApplication extends Application {
             scene.getAccelerators().put(new javafx.scene.input.KeyCodeCombination(
                     javafx.scene.input.KeyCode.valueOf("DIGIT" + (index + 1)), javafx.scene.input.KeyCombination.CONTROL_DOWN), button::fire);
         }
-        stage.setTitle("StudySync 3.0.0");
+        stage.setTitle("StudySync 3.1.0");
         stage.setMinWidth(900);
         stage.setMinHeight(600);
         stage.setScene(scene);
@@ -101,11 +101,18 @@ public class StudySyncApplication extends Application {
         active.getStyleClass().add("navigation-button-active");
     }
 
+    private void openNavigation(String name) {
+        navigation.getChildren().stream().filter(Button.class::isInstance).map(Button.class::cast)
+            .filter(button -> button.getText().equals(name)).findFirst().orElseThrow().fire();
+    }
+
     private void showDashboard() {
         setPage(pageContainer(
                 "Dashboard",
                 "A quick view of your courses, assignments, study progress, and planning priorities.",
-                DashboardView.create(service, this::showDashboard)));
+                DashboardView.create(service, this::showDashboard, new DashboardView.Actions(
+                    () -> openNavigation("Courses"), () -> openNavigation("Assignments"),
+                    () -> openNavigation("Study Sessions"), () -> openNavigation("Calendar")))));
     }
 
     private void showCourses() {

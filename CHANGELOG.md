@@ -1,3 +1,11 @@
+# 3.1.0
+
+- Refresh desktop theme and fix missing page-heading/card styles.
+- Add dashboard quick actions and first-use guidance without sample data.
+- Add a deadline queue with persistent completion and refreshed summaries.
+- Stack focus cards at compact widths; retain detailed progress in expandable insights.
+- Add dashboard navigation, onboarding, completion, style, and layout checks.
+
 # 3.0.0
 
 - Complete the established desktop productivity scope with verified native file workflows and legacy upgrades.

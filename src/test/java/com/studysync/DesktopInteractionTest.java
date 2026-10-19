@@ -83,6 +83,96 @@ class DesktopInteractionTest {
         id(view, "grade-earned", TextField.class).setText(earned);
     }
 
+    @Test void dashboardQuickActionsOpenFormsAndKeepNavigationSelected() throws Exception {
+        fx(() -> {
+            Parent root = openApp("Dashboard");
+            String[][] actions = {{"Add course", "Courses"}, {"Add assignment", "Assignments"},
+                {"Log study session", "Study Sessions"}, {"Open calendar", "Calendar"}};
+            for (String[] action : actions) {
+                button(root, "Dashboard").fire(); root.applyCss(); root.layout();
+                button(root, action[0]).fire(); root.applyCss(); root.layout();
+                assertTrue(button(root, action[1]).getStyleClass().contains("navigation-button-active"));
+                String title = nodes(root).stream().filter(Label.class::isInstance).map(Label.class::cast)
+                    .filter(label -> label.getStyleClass().contains("page-title")).findFirst().orElseThrow().getText();
+                assertEquals(action[1], title);
+            }
+        });
+    }
+
+    @Test void emptyDashboardGuidesFirstCourseWithoutCreatingSampleData() throws Exception {
+        service.deleteCourse(course.getId());
+        fx(() -> {
+            Parent root = openApp("Dashboard");
+            assertNotNull(root.lookup("#dashboard-onboarding"));
+            assertTrue(hasText(root, "Give your deadlines a home"));
+            assertTrue(service.getCourses().isEmpty()); assertTrue(service.getAssignments().isEmpty());
+            saveScreenshot("dashboard-first-use");
+            button(root, "Create your first course").fire(); root.applyCss(); root.layout();
+            field(root, "Course Code", TextField.class).setText("CS201");
+            field(root, "Course Name", TextField.class).setText("Algorithms");
+            button(root, "Add Course").fire(); button(root, "Dashboard").fire(); root.applyCss(); root.layout();
+            assertNull(root.lookup("#dashboard-onboarding"));
+            assertEquals(1, service.getCourses().size());
+        });
+    }
+
+    @Test void dashboardDeadlineCompletionPersistsAndRefreshesTheQueue() throws Exception {
+        Assignment overdue = service.createAssignment(course.getId(), "Overdue essay", "", LocalDate.now().minusDays(1).atTime(12, 0), Assignment.Priority.HIGH);
+        service.createAssignment(course.getId(), "Next report", "", LocalDate.now().plusDays(2).atTime(12, 0), Assignment.Priority.MEDIUM);
+        fx(() -> {
+            Parent root = openApp("Dashboard");
+            assertTrue(hasText(root, "Overdue essay")); assertTrue(hasText(root, "Overdue ·"));
+            Button done = id(root, "dashboard-complete-" + overdue.getId(), Button.class);
+            assertEquals("Mark Overdue essay complete", done.getAccessibleText()); done.fire(); root.applyCss(); root.layout();
+            assertEquals(1, service.getCompletedAssignments().size());
+            assertNull(root.lookup("#dashboard-complete-" + overdue.getId()));
+            assertTrue(hasText(root, "Next report")); assertTrue(hasText(root, "1 pending"));
+        });
+    }
+
+    @Test void dashboardRendersWithStylesAndResponsiveCards() throws Exception {
+        service.createAssignment(course.getId(), "Prepare for the next exam", "", LocalDate.now().plusDays(2).atTime(12, 0), Assignment.Priority.HIGH);
+        fx(() -> { openApp("Dashboard"); stage.setWidth(1380); stage.setHeight(900); });
+        waitForLayout();
+        fx(() -> {
+            Parent root = stage.getScene().getRoot(); root.applyCss(); root.layout();
+            VBox workspace = id(root, "dashboard-workspace", VBox.class);
+            Label title = nodes(root).stream().filter(Label.class::isInstance).map(Label.class::cast)
+                .filter(label -> label.getStyleClass().contains("page-title")).findFirst().orElseThrow();
+            assertTrue(title.getFont().getSize() >= 28, "Page heading style must be defined");
+            assertTrue(workspace.getWidth() > 850);
+            saveScreenshot("dashboard-wide"); stage.setWidth(900); stage.setHeight(600);
+        });
+        waitForLayout();
+        fx(() -> {
+            Parent root = stage.getScene().getRoot(); root.applyCss(); root.layout();
+            VBox workspace = id(root, "dashboard-workspace", VBox.class);
+            javafx.scene.layout.GridPane focus = (javafx.scene.layout.GridPane) workspace.getChildren().stream()
+                .filter(javafx.scene.layout.GridPane.class::isInstance).skip(1).findFirst().orElseThrow();
+            assertEquals(1, javafx.scene.layout.GridPane.getRowIndex(focus.getChildren().get(1)));
+            assertTrue(button(root, "Data & Settings").localToScene(button(root, "Data & Settings").getBoundsInLocal()).getMaxY() <= stage.getScene().getHeight() + 1);
+            saveScreenshot("dashboard-compact");
+        });
+    }
+    private static void waitForLayout() throws Exception {
+        CountDownLatch ready = new CountDownLatch(1);
+        Platform.runLater(() -> { var pause = new javafx.animation.PauseTransition(javafx.util.Duration.millis(150)); pause.setOnFinished(e -> ready.countDown()); pause.play(); });
+        assertTrue(ready.await(5, TimeUnit.SECONDS));
+    }
+    private void saveScreenshot(String name) {
+        if (!Boolean.getBoolean("desktop.screenshots")) return;
+        try {
+            var snapshot = stage.getScene().snapshot(null);
+            var image = new java.awt.image.BufferedImage((int)snapshot.getWidth(), (int)snapshot.getHeight(), java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            int[] pixels = new int[image.getWidth() * image.getHeight()];
+            snapshot.getPixelReader().getPixels(0, 0, image.getWidth(), image.getHeight(), javafx.scene.image.PixelFormat.getIntArgbInstance(), pixels, 0, image.getWidth());
+            image.setRGB(0, 0, image.getWidth(), image.getHeight(), pixels, 0, image.getWidth());
+            Path destination = Path.of("target", "desktop-screenshots", name + ".png");
+            java.nio.file.Files.createDirectories(destination.getParent());
+            javax.imageio.ImageIO.write(image, "png", destination.toFile());
+        } catch (java.io.IOException error) { throw new java.io.UncheckedIOException(error); }
+    }
+
     @Test void addAndEditGradeThroughButtons() throws Exception {
         fx(() -> {
             var view = new GradesView(service); show(view);
@@ -257,6 +347,7 @@ class DesktopInteractionTest {
                 respond(pane, ButtonType.OK);
             }, () -> button(root, "Delete").fire());
             assertTrue(service.getCourses().isEmpty()); assertTrue(service.getAssignments().isEmpty());
+            saveScreenshot("dashboard-first-use");
             assertTrue(service.getStudySessions().isEmpty()); assertTrue(service.getAcademicGrades().isEmpty());
         });
     }

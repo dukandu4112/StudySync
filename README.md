@@ -14,6 +14,14 @@ The desktop packages include Java; a separate JDK is not required.
 Release assets include `SHA256SUMS.txt` for download verification. Keep all files
 in the extracted application folder together.
 
+## What is new in 3.1
+
+- A refreshed desktop theme with clearer headings, forms, and cards.
+- Dashboard shortcuts to courses, assignments, study sessions, and calendar.
+- First-use guidance without adding sample data to your workspace.
+- A five-item deadline queue with persistent completion actions.
+- Responsive focus cards and expandable progress/course insights.
+
 ## Features
 
 - Course creation, editing, searching, and confirmed cascading deletion.
@@ -57,8 +65,8 @@ mvn javafx:run
 Executable desktop JAR and original CLI:
 
 ```sh
-java -jar target/studysync-3.0.0-all.jar
-java -cp target/studysync-3.0.0-all.jar com.studysync.Main
+java -jar target/studysync-3.1.0-all.jar
+java -cp target/studysync-3.1.0-all.jar com.studysync.Main
 ```
 
 Build native packages on the target OS with `scripts/package-desktop.ps1`
@@ -66,7 +74,7 @@ Build native packages on the target OS with `scripts/package-desktop.ps1`
 
 ## Project status
 
-The v3.0.0 release implements the established desktop scope. Development is
+The v3.1.0 release implements the established desktop scope. Development is
 not capped at this version: new requirements and verified issues drive future
 releases. See [development goals](docs/DEVELOPMENT-GOALS.md).
 

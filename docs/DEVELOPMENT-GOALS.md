@@ -24,8 +24,8 @@ and verified problems.
 
 ## Completion evidence
 
-The current functional scope is implemented. Release validation covers 243 tests,
-including 28 desktop interaction tests, legacy database migrations, recovery,
+The current functional scope is implemented. Release validation covers 247 tests,
+including 32 desktop interaction tests, legacy database migrations, recovery,
 and 100 repeated-use cycles with thousands of saved records. Native Windows
 Save/Open, cancellation, restore, export, accessibility metadata, and repeat
 launch are release gates. See RELEASE-VALIDATION.md for the evidence and limits.
