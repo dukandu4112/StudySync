@@ -17,9 +17,9 @@ public final class DailyStudyGoalView {
 
     public static VBox create(StudySyncService service) {
         if (service == null) throw new IllegalArgumentException("StudySync service cannot be null.");
-        Label progress=styledLabel("","metric-value"); ProgressBar bar=new ProgressBar(0);bar.setMaxWidth(Double.MAX_VALUE);Label status=styledLabel("","assignment-title");Label percent=styledLabel("","assignment-meta");
+        Label progress=styledLabel("","metric-value"); ProgressBar bar=new ProgressBar(0);bar.setMaxWidth(Double.MAX_VALUE);bar.setAccessibleText("Daily study goal progress");Label status=styledLabel("","assignment-title");Label percent=styledLabel("","assignment-meta");
         int savedTarget=Math.max(MIN_TARGET_MINUTES,Math.min(MAX_TARGET_MINUTES,service.getDailyStudyTargetMinutes()));
-        Spinner<Integer> target=new Spinner<>(MIN_TARGET_MINUTES,MAX_TARGET_MINUTES,savedTarget,TARGET_STEP_MINUTES);target.setEditable(true);target.setPrefWidth(110);
+        Spinner<Integer> target=new Spinner<>(MIN_TARGET_MINUTES,MAX_TARGET_MINUTES,savedTarget,TARGET_STEP_MINUTES);target.setEditable(true);target.setAccessibleText("Daily study target in minutes");target.setPrefWidth(110);
         HBox targetControls=new HBox(10,styledLabel("Daily target (minutes)","assignment-meta"),target);targetControls.setAlignment(Pos.CENTER_LEFT);HBox details=new HBox(12,status,percent);details.setAlignment(Pos.CENTER_LEFT);
         Runnable refresh=()->updateGoal(service.getDailyStudyGoal(target.getValue()),progress,bar,status,percent);
         target.valueProperty().addListener((observable,oldValue,newValue)->{service.setDailyStudyTargetMinutes(newValue);refresh.run();}); refresh.run();

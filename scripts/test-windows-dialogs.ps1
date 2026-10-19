@@ -7,7 +7,7 @@ New-Item -ItemType Directory -Force $qaRoot | Out-Null
 $database = Join-Path $qaRoot "live.db"
 $backup = Join-Path $qaRoot "backup.db"
 $report = Join-Path $qaRoot "report.csv"
-$jar = "target/studysync-3.0.0-all.jar"
+$jar = "target/studysync-3.1.0-all.jar"
 function Fixture([string]$mode) {
     & java -cp $jar scripts/NativeDataFixture.java $mode $database
     if ($LASTEXITCODE -ne 0) { throw "Fixture validation failed: $mode" }
@@ -42,7 +42,7 @@ try {
     $app = Start-Process target/desktop/StudySync/StudySync.exe -PassThru -RedirectStandardOutput (Join-Path $qaRoot "app.stdout.log") -RedirectStandardError (Join-Path $qaRoot "app.stderr.log")
     $env:JAVA_TOOL_OPTIONS = $priorOptions
     Write-Host "Interactive desktop: $([Environment]::UserInteractive)"
-    Wait-Window "StudySync 3.0"
+    Wait-Window "StudySync 3.1"
     Send "^9"
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-accessibility.ps1
     if ($LASTEXITCODE -ne 0) { throw "Windows accessibility metadata checks failed" }
@@ -50,32 +50,32 @@ try {
     Select-Path "Create backup" $backup
     Wait-File $backup
     Write-Host "PASS: real Save dialog created database backup"
-    Wait-Window "StudySync 3.0"
+    Wait-Window "StudySync 3.1"
     Send "%b"
     Wait-Window "Create backup"
     Send "{ESC}"
     Write-Host "PASS: Save dialog cancellation"
-    Wait-Window "StudySync 3.0"
+    Wait-Window "StudySync 3.1"
     Send "%e"
     Select-Path "Export report" $report
     Wait-File $report
     if (-not (Get-Content $report -Raw).Contains("NATIVE101")) { throw "CSV lacks fixture data" }
     Write-Host "PASS: real Save dialog exported CSV"
     Fixture "mutate"
-    Wait-Window "StudySync 3.0"
+    Wait-Window "StudySync 3.1"
     Send "%r"
     Wait-Window "Choose StudySync backup"
     Send "{ESC}"
     Fixture "mutated"
     Write-Host "PASS: Open dialog cancellation preserves data"
-    Wait-Window "StudySync 3.0"
+    Wait-Window "StudySync 3.1"
     Send "%r"
     Select-Path "Choose StudySync backup" $backup
     Wait-Window "Confirmation"
     Send "{ESC}"
     Fixture "mutated"
     Write-Host "PASS: restore confirmation cancellation preserves data"
-    Wait-Window "StudySync 3.0"
+    Wait-Window "StudySync 3.1"
     Send "%r"
     Select-Path "Choose StudySync backup" $backup
     Wait-Window "Confirmation"
@@ -87,7 +87,7 @@ try {
     Write-Host "PASS: real Open dialog restored data and preserved recovery snapshot"
     Stop-Process -Id $app.Id
     $app = Start-Process target/desktop/StudySync/StudySync.exe -PassThru -Environment @{JAVA_TOOL_OPTIONS="-Duser.home=$qaRoot -Dstudysync.database=jdbc:sqlite:$database"}
-    Wait-Window "StudySync 3.0"
+    Wait-Window "StudySync 3.1"
     Fixture "original"
     Write-Host "PASS: packaged application reopens with restored data"
 } catch {

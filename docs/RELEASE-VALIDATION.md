@@ -1,4 +1,4 @@
-# StudySync 3.0.0 release validation
+# StudySync 3.1.0 release validation
 
 ## Scope review
 
@@ -6,6 +6,13 @@ The original productivity goals are represented by Courses, Assignments,
 Study Sessions, Workload, and Dashboard. The subsequent desktop roadmap adds
 Calendar, Grades, Search & Alerts, and Data & Settings. Smart planning, goals,
 recommendations, SQLite persistence, and the original CLI are retained.
+
+## Dashboard refresh
+
+The 3.1 update adds four desktop checks for quick-action navigation, first-course
+setup, persisted deadline completion, and themed wide/compact layouts. The optional
+`-Ddesktop.screenshots=true` flag saves rendered dashboard PNGs under
+`target/desktop-screenshots` during the desktop test run.
 
 ## Automated evidence
 

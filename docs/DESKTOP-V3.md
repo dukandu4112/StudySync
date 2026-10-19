@@ -22,6 +22,9 @@ recommendations, dashboard, course/assignment editing, study history, and worklo
 - 3.0: executable desktop JAR and native app-image packaging scripts, release
   documentation, native Windows workflow validation, and stable download archives.
 
+- 3.1: refreshed desktop theme, dashboard shortcuts, first-use guidance,
+  persistent deadline completion, responsive focus cards, and expandable insights.
+
 ## Run
 
 Java 17 and Maven are required for source builds:
@@ -34,13 +37,13 @@ mvn javafx:run
 The executable JAR opens the desktop interface:
 
 ```sh
-java -jar target/studysync-3.0.0-all.jar
+java -jar target/studysync-3.1.0-all.jar
 ```
 
 The original CLI remains available:
 
 ```sh
-java -cp target/studysync-3.0.0-all.jar com.studysync.Main
+java -cp target/studysync-3.1.0-all.jar com.studysync.Main
 ```
 
 The plain Java desktop launcher reuses `studysync.db` in the working directory
