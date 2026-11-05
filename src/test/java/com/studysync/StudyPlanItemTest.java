@@ -80,6 +80,21 @@ class StudyPlanItemTest {
         assertThrows(IllegalArgumentException.class, () -> item(30, 50).accessiblePlanLabel(3, 2));
     }
 
+    @Test
+    void blockHeadingDistinguishesOnlyFirstMiddleAndFinalBlocks() {
+        assertEquals("Block 1 · Only block", item(30, 50).blockHeading(1, 1));
+        assertEquals("Block 1 · Start here", item(30, 50).blockHeading(1, 4));
+        assertEquals("Block 2", item(30, 50).blockHeading(2, 4));
+        assertEquals("Block 4 · Final block", item(30, 50).blockHeading(4, 4));
+    }
+
+    @Test
+    void blockHeadingRejectsInvalidPositions() {
+        assertThrows(IllegalArgumentException.class, () -> item(30, 50).blockHeading(0, 2));
+        assertThrows(IllegalArgumentException.class, () -> item(30, 50).blockHeading(1, 0));
+        assertThrows(IllegalArgumentException.class, () -> item(30, 50).blockHeading(3, 2));
+    }
+
     @Test void rejectsInvalidPlanItems() { assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(null,30,"Review",50)); assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(course,0,"Review",50)); assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(course,30,"",50)); assertThrows(IllegalArgumentException.class,()->new StudyPlanItem(course,30,"Review",-1)); }
 
     private StudyPlanItem item(int minutes, int score) { return new StudyPlanItem(course, minutes, "Review upcoming work", score); }
